@@ -11,11 +11,11 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@stacks/connect": "^7.6.0",
-    "@stacks/network": "^6.13.0",
-    "@stacks/transactions": "^6.13.0",
     "@stacks/auth": "^6.13.0",
+    "@stacks/connect": "^7.10.2",
+    "@stacks/network": "^6.17.0",
     "@stacks/storage": "^6.13.0",
+    "@stacks/transactions": "^6.17.0",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
