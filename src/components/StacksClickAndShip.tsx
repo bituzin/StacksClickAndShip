@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
+import { openContractCall } from '@stacks/connect';
+import { StacksMainnet } from '@stacks/network';
+import { stringUtf8CV } from '@stacks/transactions';
 
 interface StacksClickAndShipProps {
   isAuthenticated: boolean;
@@ -31,6 +34,31 @@ export default function StacksClickAndShip({
     }
     return null;
   };
+
+  // Adres kontraktu gmok
+  const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
+  // Jeśli kontrakt nazywa się inaczej niż 'gmok', zmień też GMOK_CONTRACT_NAME
+  const GMOK_CONTRACT_NAME = 'gm02';
+
+  async function handleSayGM() {
+    if (!isAuthenticated) return;
+    await openContractCall({
+      network: new StacksMainnet(),
+      anchorMode: 1,
+      contractAddress: GMOK_CONTRACT_ADDRESS,
+      contractName: GMOK_CONTRACT_NAME,
+      functionName: 'say-gm',
+      functionArgs: [],
+      appDetails: {
+        name: 'Stacks Click & Ship',
+        icon: window.location.origin + '/vite.svg',
+      },
+      onFinish: (data) => {
+        // Możesz dodać powiadomienie lub reload
+        window.location.reload();
+      },
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-900 via-orange-800 to-amber-900">
@@ -149,6 +177,7 @@ export default function StacksClickAndShip({
               <button 
                 className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
                 disabled={!isAuthenticated}
+                onClick={handleSayGM}
               >
                 ☀️ Say GM
               </button>
