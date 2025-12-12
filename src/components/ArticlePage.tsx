@@ -29,7 +29,11 @@ Stacks unlocks Bitcoin's potential beyond just a store of value. It enables a ne
 In short, Stacks acts as the smart contract layer for Bitcoin, transforming it into a full-fledged, programmable ecosystem.`
   },
   'pox': { title: '', level: '', content: '' },
-  'bitcoin-layer2': { title: '', level: '', content: '' },
+  'bitcoin-layer2': {
+    title: 'Bitcoin Layer 2 Explained',
+    level: '',
+    content: `What is Bitcoin Layer 2 (L2)?\nA Layer 2 is an additional protocol or blockchain built on top of Bitcoin’s base layer (Layer 1). Its goal is to expand Bitcoin’s capabilities without sacrificing its security and decentralization.\n\nWhy do we need Layer 2 solutions?\n\n🔋 Bitcoin L1 Limitations:\n- Low throughput (~7 transactions per second)\n- High fees during network congestion\n- Limited programmability\n\n🛠️ The L2 Solution:\nInstead of changing Bitcoin itself, Layer 2 moves transactions off the main chain and only records the final result on Bitcoin. It’s like doing calculations on a notepad and writing only the answer in the official ledger.\n\nTypes of Layer 2 solutions:\n\n🔄 State Channels (e.g., Lightning Network):\nPrivate payment channels, instant and cheap micropayments, only channel open/close hits the main chain.\n\n🏗️ Sidechains (e.g., Stacks, Rootstock):\nIndependent blockchains with their own rules, two-way BTC transfer, support for smart contracts and dApps.\n\n📜 Client-Side Validation / Rollups (e.g., BitVM):\nOff-chain transactions, data compression and publication to Bitcoin, security via fraud/validity proofs (still in research phase).\n\nWhy are Bitcoin L2s important?\n\n🚀 Scalability:\nFaster and cheaper transactions.\n\n🔐 Security inheritance:\nThey use Bitcoin’s security and decentralization as a foundation.\n\n💡 Innovation:\nEnable DeFi, NFTs, and fast payments on Bitcoin without risking the main chain.\n\nThe trade-off: security vs. scalability\nEvery L2 introduces new trust assumptions or technical complexity to achieve scalability. The best solutions minimize these trade-offs and maximize their connection to Bitcoin.\n\nSummary:\nLayer 2 solutions turn Bitcoin from “digital gold” into a dynamic financial and application ecosystem, allowing it to scale globally while keeping its base layer rock-solid.`
+  },
   'stacking': { title: '', level: '', content: '' },
   'clarity-vs-solidity': { title: '', level: '', content: '' },
   'build-dapp': { title: '', level: '', content: '' }
