@@ -35,7 +35,62 @@ Stacks unlocks Bitcoin's potential beyond just a store of value. It enables a ne
 
 **In short:** Stacks acts as the smart contract layer for Bitcoin, transforming it into a full-fledged, programmable ecosystem.`
   },
-  'pox': { title: '', level: '', content: '' },
+  'pox': {
+    title: 'Proof of Transfer (PoX): Ecological Bitcoin Consensus',
+    level: 'Intermediate',
+    content: `# Proof of Transfer (PoX): Ecological Bitcoin Consensus
+
+Imagine you could use existing Bitcoins to secure an entirely new blockchain network. That’s exactly what **Proof of Transfer (PoX)** does—an innovative mechanism that, instead of wasting energy, leverages value already secured in the Bitcoin network.
+
+## ⚡ What is Proof of Transfer?
+
+**Proof of Transfer (PoX)** is a consensus mechanism that uses an **existing blockchain (Bitcoin)** to secure a **new network (Stacks)**. It’s like building a new, secure building on the foundation of an old, indestructible fortress.
+
+## 🔄 How Does It Work? A Simple Analogy
+
+Imagine Bitcoin as **old gold coins** with huge value and security. Instead of melting them down to make new ones (Proof of Work), PoX says:
+
+1.  **You transfer** some old gold coins to a special box.
+2.  In return, you get the right to **mint (mine)** new silver coins in a brand new kingdom (Stacks).
+3.  Your old gold isn’t destroyed—it moves on to others who help secure the new network.
+
+## 🏗️ Main System Components
+
+### **Miners**
+They send Bitcoin in special transactions. Whoever commits more BTC has a higher chance to mine a new Stacks block and receive a reward in new tokens (STX).
+
+### **Stackers**
+These are people who **lock** their STX tokens in the network. In return, they receive **Bitcoin** sent by miners! It’s passive BTC income for helping secure the network.
+
+## ✅ Key Advantages of PoX
+
+**Ecological**
+It doesn’t consume huge amounts of electricity like Proof of Work. It uses energy already spent to secure Bitcoin.
+
+**Secure**
+It inherits security from Bitcoin. To attack the Stacks network, you’d first have to attack Bitcoin—which is practically impossible.
+
+**Supports Bitcoin**
+Creates steady, cyclical demand for Bitcoin, since miners must keep buying it to participate.
+
+**Rewarding**
+Creates a unique economy where users (Stackers) are rewarded with **real Bitcoin** for participating in the network.
+
+## 🔗 PoX vs Other Mechanisms
+
+**Proof of Work (Bitcoin):** “Burn energy to prove commitment.”
+**Proof of Stake (Ethereum 2.0, Cardano):** “Lock your own tokens to prove commitment.”
+**Proof of Transfer (Stacks):** “Transfer value from an older, more secure network (BTC) to prove commitment to a new one.”
+
+## 🎯 Summary: Why Does It Matter?
+
+Proof of Transfer is a brilliant solution that:
+1.  **Unlocks Bitcoin’s potential** from being just “digital gold” and lets it become the foundation for apps (DeFi, NFT).
+2.  **Creates synergy**—the new network (Stacks) gains security, and Bitcoin gains extra utility and demand.
+3.  **Is sustainable**—it doesn’t repeat the energy consumption problems, using what already exists.
+
+**In short:** Proof of Transfer is an economic bridge between the indestructible world of Bitcoin and the innovative world of smart contracts and apps. It’s value recycling instead of energy recycling.`
+  },
   'bitcoin-layer2': {
     title: 'Bitcoin Layer 2 Explained',
     level: 'Intermediate',
@@ -85,7 +140,91 @@ Every L2 introduces new trust assumptions or technical complexity to achieve sca
 
 **Summary:** Layer 2 solutions turn Bitcoin from "digital gold" into a dynamic financial and application ecosystem, allowing it to scale globally while keeping its base layer rock-solid.`
   },
-  'stacking': { title: '', level: '', content: '' },
+  'stacking': {
+    title: 'Stacking - Earn Bitcoin: Passive Income in the Stacks Network',
+    level: 'Beginner',
+    content: `# Stacking - Earn Bitcoin: Passive Income in the Stacks Network 🥞💰
+
+Imagine earning **real Bitcoin** just by holding your tokens in your wallet. This isn’t a magic investment, but a real mechanism in the Stacks network called **Stacking**.
+
+## ⚡ What is Stacking?
+
+**Stacking** is the process of locking your **STX** tokens in the Stacks network to help secure it. In return, you receive rewards in **Bitcoin (BTC)**. It’s like a crypto savings account where the interest is paid in BTC.
+
+## 🔄 How Does It Work? A Simple Analogy
+
+Imagine the Stacks network as a new cooperative:
+1.  **You (the Stacker)** deposit your contribution (STX tokens) into a shared pool.
+2.  **The network** uses your contribution to confirm transactions and maintain security.
+3.  **Miners** pay for the privilege of mining new blocks—they pay in **Bitcoin**.
+4.  **You** receive a portion of that Bitcoin as a dividend for your contribution.
+
+## 🏗️ How to Start Stacking?
+
+### **1. Own Enough STX**
+The network has a minimum threshold that changes over time (usually from a few hundred to a few thousand STX). You can also join a **stacking pool** with a smaller amount.
+
+### **2. Choose a Method**
+*   **Solo Stacking** – via Hiro Wallet or Stacks Web Wallet
+*   **Stacking Pool** – like Joinpool, Friedger Pool, Planbetter
+*   **Centralized Services (CEX)** – some exchanges offer automatic stacking
+
+### **3. Lock Tokens for a Period**
+Each stacking round lasts about **2 weeks** (about 210 Bitcoin blocks). After the round, you can withdraw your STX or continue stacking.
+
+## ✅ What Do You Need to Stack?
+
+*   **STX tokens** (enough for the threshold or to join a pool)
+*   **Active Stacks account** (address starting with 'SP' or 'ST')
+*   **A small amount of STX for transaction fees**
+*   **A wallet that supports Stacking** (Hiro Wallet, Xverse)
+
+## 🎯 Key Benefits of Stacking
+
+**Passive Income in BTC**
+You earn real Bitcoin without trading or active investing.
+
+**Supporting the Network**
+Your tokens help secure the Stacks network, making it more decentralized.
+
+**Predictability**
+Rewards are relatively predictable and depend on:
+*   The amount of STX you lock
+*   The total value locked in the network
+*   The current reward rate
+
+## ⚠️ Important Things to Consider
+
+**Price Fluctuation Risk**
+The value of your STX may rise or fall during the lock period.
+
+**Lock Periods**
+Tokens are locked for the entire round (~2 weeks). You can’t sell them during this time.
+
+**Fees**
+Stacking pools charge a commission (usually 5-10%). Solo stacking has transaction fees.
+
+**Minimum Threshold**
+Solo stacking often requires several thousand STX. Pools have lower thresholds.
+
+## 💡 Stacking vs. Staking – The Key Difference
+
+**Staking (e.g., Ethereum, Cardano)**
+You secure the network with its own tokens. Rewards are in **the same token**.
+
+**Stacking (Stacks)**
+You secure the network with STX tokens. Rewards are in **Bitcoin**. That’s a fundamental difference!
+
+## 🚀 Summary: Is It Worth It?
+
+Stacking is ideal for people who:
+*   Believe in the long-term potential of the Stacks ecosystem
+*   Want to passively earn Bitcoin without active trading
+*   Don’t need immediate access to their STX
+*   Understand the risks of locking funds
+
+**In short:** Stacking is the most direct way to make your Stacks wallet work for you, paying you in the most valuable digital currency—Bitcoin. It’s like having a BTC printing machine powered by your belief in the future of smart contracts on Bitcoin.`
+  },
   'clarity-vs-solidity': {
     title: 'Clarity vs Solidity: Key Differences',
     level: 'All',
