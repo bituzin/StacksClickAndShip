@@ -18,7 +18,10 @@
     "@stacks/transactions": "^6.17.0",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-markdown": "^8.0.7",
+    "react-router-dom": "^6.30.2",
+    "remark-gfm": "^3.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

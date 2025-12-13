@@ -41,8 +41,11 @@ document.getElementById('connectBtn').addEventListener('click', () => {
 });
 
 // Deploy contract
+
 document.getElementById('deployBtn').addEventListener('click', async () => {
-    const network = new StacksMainnet();
+    const networkSelect = document.getElementById('network');
+    const networkValue = networkSelect.value;
+    const network = networkValue === 'testnet' ? new StacksTestnet() : new StacksMainnet();
 
     const contractCode = document.getElementById('contractCode').value.trim();
     const contractName = document.getElementById('contractName').value.trim();
@@ -57,15 +60,16 @@ document.getElementById('deployBtn').addEventListener('click', async () => {
         return;
     }
 
-    updateStatus(`🔄 Przygotowywanie deployu na mainnet...`, 'info');
+    updateStatus(`🔄 Przygotowywanie deployu na ${networkValue}...`, 'info');
 
     openContractDeploy({
         contractName: contractName,
         codeBody: contractCode,
         network: network,
         onFinish: (data) => {
-            const explorerUrl = `https://explorer.hiro.so/txid/${data.txId}`;
-            
+            const explorerUrl = networkValue === 'testnet'
+                ? `https://explorer.hiro.so/txid/${data.txId}?chain=testnet`
+                : `https://explorer.hiro.so/txid/${data.txId}`;
             updateStatus(
                 `✅ <strong>Deploy wysłany!</strong><br><br>` +
                 `<strong>TX ID:</strong> ${data.txId}<br>` +

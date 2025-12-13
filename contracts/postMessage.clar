@@ -49,6 +49,11 @@
   )
 )
 
+;; Read-only: get message by ID
+(define-read-only (get-message (id uint))
+  (ok (map-get? messages id))
+)
+
 ;; Read-only: get total messages
 (define-read-only (get-total-messages)
   (ok (var-get total-messages))
@@ -57,20 +62,4 @@
 ;; Read-only: get today's messages count
 (define-read-only (get-today-messages)
   (ok (var-get total-messages-today))
-)
-
-;; Read-only: get last N messages (max 5)
-(define-read-only (get-last-messages (n uint))
-  (let
-    (
-      (total (var-get total-messages))
-      (start (if (> total n) (- total n) u0))
-    )
-    (map
-      (lambda (i)
-        (default-to {sender: 'SP000000000000000000002Q6VF78, block: u0, content: ""} (map-get? messages (+ start i)))
-      )
-      (range u1 (min n total))
-    )
-  )
 )
