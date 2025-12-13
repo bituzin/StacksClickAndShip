@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
+import { callReadOnlyFunction } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
 
 interface StacksClickAndShipProps {
@@ -46,6 +47,80 @@ export default function StacksClickAndShip({
   // Adres kontraktu gmUnlimited
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gmUmlimited';
+
+  // State for GM counts
+  const [todayGm, setTodayGm] = React.useState<number | null>(null);
+  const [totalGm, setTotalGm] = React.useState<number | null>(null);
+  const [userGm, setUserGm] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    async function fetchGmCounts() {
+      try {
+        const senderAddress = getUserAddress() || 'SP000000000000000000002Q6VF78';
+        
+        // Helper to parse Clarity response
+        const parseClarityUint = (res: any): number | null => {
+          if (res && res.value && res.value.value !== undefined) {
+            const val = res.value.value;
+            if (typeof val === 'string') {
+              return Number(val.replace(/n$/, ''));
+            }
+            if (typeof val === 'bigint') {
+              return Number(val);
+            }
+            return Number(val);
+          }
+          return null;
+        };
+        
+        // Today's GM
+        const todayRes = await callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-daily-gm-count',
+          functionArgs: [],
+          network: new StacksMainnet(),
+          senderAddress,
+        });
+        
+        // Total GM
+        const totalRes = await callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-total-gms-alltime',
+          functionArgs: [],
+          network: new StacksMainnet(),
+          senderAddress,
+        });
+        
+        setTodayGm(parseClarityUint(todayRes));
+        setTotalGm(parseClarityUint(totalRes));
+        
+        // User's GM (if authenticated)
+        if (isAuthenticated && getUserAddress()) {
+          const { principalCV } = await import('@stacks/transactions');
+          const userRes = await callReadOnlyFunction({
+            contractAddress: GMOK_CONTRACT_ADDRESS,
+            contractName: GMOK_CONTRACT_NAME,
+            functionName: 'get-user-total-gms',
+            functionArgs: [principalCV(getUserAddress()!)],
+            network: new StacksMainnet(),
+            senderAddress,
+          });
+          setUserGm(parseClarityUint(userRes));
+        } else {
+          setUserGm(null);
+        }
+      } catch (e) {
+        console.error('GM fetch error', e);
+        setTodayGm(null);
+        setTotalGm(null);
+        setUserGm(null);
+      }
+    }
+    fetchGmCounts();
+  }, [isAuthenticated]);
+
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -101,6 +176,74 @@ export default function StacksClickAndShip({
           <div className="flex justify-center space-x-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+  
+        React.useEffect(() => {
+          async function fetchGmCounts() {
+            try {
+              const senderAddress = getUserAddress() || 'SP000000000000000000002Q6VF78';
+        
+              // Helper to parse Clarity response
+              const parseClarityUint = (res: any): number | null => {
+                if (res && res.value && res.value.value !== undefined) {
+                  const val = res.value.value;
+                  if (typeof val === 'string') {
+                    return Number(val.replace(/n$/, ''));
+                  }
+                  if (typeof val === 'bigint') {
+                    return Number(val);
+                  }
+                  return Number(val);
+                }
+                return null;
+              };
+        
+              // Today's GM
+              const todayRes = await callReadOnlyFunction({
+                contractAddress: GMOK_CONTRACT_ADDRESS,
+                contractName: GMOK_CONTRACT_NAME,
+                functionName: 'get-daily-gm-count',
+                functionArgs: [],
+                network: new StacksMainnet(),
+                senderAddress,
+              });
+        
+              // Total GM
+              const totalRes = await callReadOnlyFunction({
+                contractAddress: GMOK_CONTRACT_ADDRESS,
+                contractName: GMOK_CONTRACT_NAME,
+                functionName: 'get-total-gms-alltime',
+                functionArgs: [],
+                network: new StacksMainnet(),
+                senderAddress,
+              });
+        
+              setTodayGm(parseClarityUint(todayRes));
+              setTotalGm(parseClarityUint(totalRes));
+        
+              // User's GM (if authenticated)
+              if (isAuthenticated && getUserAddress()) {
+                const { principalCV } = await import('@stacks/transactions');
+                const userRes = await callReadOnlyFunction({
+                  contractAddress: GMOK_CONTRACT_ADDRESS,
+                  contractName: GMOK_CONTRACT_NAME,
+                  functionName: 'get-user-total-gms',
+                  functionArgs: [principalCV(getUserAddress()!)],
+                  network: new StacksMainnet(),
+                  senderAddress,
+                });
+                setUserGm(parseClarityUint(userRes));
+              } else {
+                setUserGm(null);
+              }
+            } catch (e) {
+              console.error('GM fetch error', e);
+              setTodayGm(null);
+              setTotalGm(null);
+              setUserGm(null);
+            }
+          }
+          fetchGmCounts();
+        }, [isAuthenticated]);
               return (
                 <Link
                   key={item.id}
@@ -178,17 +321,30 @@ export default function StacksClickAndShip({
               <div className="text-center mb-8">
                 <Sun className="text-yellow-400 mx-auto mb-4" size={64} />
                 <h2 className="text-4xl font-bold text-white mb-2">Say GM to Stacks!</h2>
-                <p className="text-orange-300">Today's GM count: 247</p>
-                <p className="text-orange-400 font-bold text-2xl mt-2">Your streak: 🔥 12 days</p>
+              
+              <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm">Today's GM</p>
+                  <p className="text-white text-3xl font-bold">{todayGm !== null ? todayGm : '...'}</p>
+                </div>
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm">Total GM</p>
+                  <p className="text-white text-3xl font-bold">{totalGm !== null ? totalGm : '...'}</p>
+                </div>
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm">My GM</p>
+                  <p className="text-white text-3xl font-bold">{userGm !== null ? userGm : (isAuthenticated ? '...' : '—')}</p>
+                </div>
               </div>
+            </div>
 
-              <button 
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
-                disabled={!isAuthenticated}
-                onClick={handleSayGM}
-              >
-                ☀️ Say GM
-              </button>
+            <button 
+              className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+              disabled={!isAuthenticated}
+              onClick={handleSayGM}
+            >
+              ☀️ Say GM
+            </button>
 
               {!isAuthenticated && (
                 <p className="text-center text-orange-400 mt-4 text-sm">
