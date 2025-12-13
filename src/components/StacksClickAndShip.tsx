@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
 import { StacksMainnet } from '@stacks/network';
-import { stringUtf8CV } from '@stacks/transactions';
 
 interface StacksClickAndShipProps {
   isAuthenticated: boolean;
@@ -16,15 +16,23 @@ export default function StacksClickAndShip({
   connectWallet, 
   userSession 
 }: StacksClickAndShipProps) {
-  const [activeTab, setActiveTab] = useState('home');
-  const [copied, setCopied] = useState(false);
+  const location = useLocation();
+  const [copied, setCopied] = React.useState(false);
+
+  // Determine active tab from pathname
+  const path = location.pathname;
+  let activeTab: string = 'home';
+  if (path.startsWith('/gm')) activeTab = 'gm';
+  else if (path.startsWith('/message')) activeTab = 'message';
+  else if (path.startsWith('/vote')) activeTab = 'vote';
+  else if (path === '/learn') activeTab = 'learn';
 
   const menuItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'gm', label: 'GM', icon: Sun },
-    { id: 'message', label: 'Post', icon: MessageSquare },
-    { id: 'vote', label: 'Vote', icon: CheckSquare },
-    { id: 'learn', label: 'Learn', icon: BookOpen }
+    { id: 'home', label: 'Home', icon: Home, to: '/' },
+    { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
+    { id: 'message', label: 'Post', icon: MessageSquare, to: '/message' },
+    { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
+    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
   const getUserAddress = () => {
@@ -35,10 +43,9 @@ export default function StacksClickAndShip({
     return null;
   };
 
-  // Adres kontraktu gmok
+  // Adres kontraktu gmUnlimited
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  // Jeśli kontrakt nazywa się inaczej niż 'gmok', zmień też GMOK_CONTRACT_NAME
-  const GMOK_CONTRACT_NAME = 'gm02';
+  const GMOK_CONTRACT_NAME = 'gmUmlimited';
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -53,7 +60,7 @@ export default function StacksClickAndShip({
         name: 'Stacks Click & Ship',
         icon: window.location.origin + '/vite.svg',
       },
-      onFinish: (data) => {
+      onFinish: () => {
         // Możesz dodać powiadomienie lub reload
         window.location.reload();
       },
@@ -95,18 +102,19 @@ export default function StacksClickAndShip({
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
-                <button
+                <Link
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  to={item.to}
                   className={`flex items-center space-x-2 px-6 py-4 transition-all duration-200 ${
                     activeTab === item.id
                       ? 'bg-orange-600 text-white border-b-4 border-amber-400'
                       : 'text-orange-300 hover:bg-orange-800/50 hover:text-white'
                   }`}
+                  style={{ textDecoration: 'none' }}
                 >
                   <Icon size={20} />
                   <span className="font-medium">{item.label}</span>
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -115,7 +123,7 @@ export default function StacksClickAndShip({
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
-        {activeTab === 'home' && (
+        {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-2xl text-white mb-2">Welcome to Stacks - Click and Ship</h2>
@@ -125,29 +133,29 @@ export default function StacksClickAndShip({
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div onClick={() => setActiveTab('gm')} className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer">
+                <Link to="/gm" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Sun className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Say GM!</h3>
                   <p className="text-orange-300">Say good morning on-chain and build your streak</p>
-                </div>
+                </Link>
 
-                <div onClick={() => setActiveTab('message')} className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer">
+                <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <MessageSquare className="text-amber-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
-                </div>
+                </Link>
 
-                <div onClick={() => setActiveTab('vote')} className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer">
+                <Link to="/vote" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <CheckSquare className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Vote</h3>
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
-                </div>
+                </Link>
 
-                <div onClick={() => setActiveTab('learn')} className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer">
+                <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-amber-300 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
-                </div>
+                </Link>
               </div>
 
               <div className="mt-8 text-center">
@@ -164,7 +172,7 @@ export default function StacksClickAndShip({
           </div>
         )}
 
-        {activeTab === 'gm' && (
+        {activeTab === 'gm' && path.startsWith('/gm') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <div className="text-center mb-8">
@@ -209,7 +217,7 @@ export default function StacksClickAndShip({
           </div>
         )}
 
-        {activeTab === 'message' && (
+        {activeTab === 'message' && path.startsWith('/message') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-6">✍️ Post Message On-Chain</h2>
@@ -256,7 +264,7 @@ export default function StacksClickAndShip({
           </div>
         )}
 
-        {activeTab === 'vote' && (
+        {activeTab === 'vote' && path.startsWith('/vote') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Vote</h2>
@@ -266,30 +274,30 @@ export default function StacksClickAndShip({
           </div>
         )}
 
-        {activeTab === 'learn' && (
+        {activeTab === 'learn' && path.startsWith('/learn') && !/^\/learn\/[\w-]+$/.test(path) && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-6">📚 Learn Stacks</h2>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
-                  { title: 'What is Stacks?', level: 'Beginner', duration: '5 min' },
-                  { title: 'Proof of Transfer (PoX)', level: 'Intermediate', duration: '10 min' },
-                  { title: 'Bitcoin Layer 2 Explained', level: 'Beginner', duration: '7 min' },
-                  { title: 'Stacking - Earn Bitcoin', level: 'Intermediate', duration: '12 min' },
-                  { title: 'Clarity vs Solidity', level: 'Advanced', duration: '15 min' },
-                  { title: 'Build Your First dApp', level: 'Intermediate', duration: '30 min' }
+                  { title: 'What is Stacks?', slug: 'what-is-stacks' },
+                  { title: 'Proof of Transfer (PoX)', slug: 'pox' },
+                  { title: 'Bitcoin Layer 2 Explained', slug: 'bitcoin-layer2' },
+                  { title: 'Stacking - Earn Bitcoin', slug: 'stacking' },
+                  { title: 'Clarity vs Solidity', slug: 'clarity-vs-solidity' },
+                  { title: 'Build Your First dApp', slug: 'build-dapp' }
                 ].map((tutorial, idx) => (
-                  <div key={idx} className="bg-purple-900/40 rounded-xl p-6 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer">
+                  <Link
+                    key={idx}
+                    to={`/learn/${tutorial.slug}`}
+                    className="bg-purple-900/40 rounded-xl p-6 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer block"
+                    style={{ textDecoration: 'none' }}
+                  >
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-bold text-white">{tutorial.title}</h3>
                       <BookOpen className="text-pink-400" size={24} />
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-purple-400">{tutorial.level}</span>
-                      <span className="text-purple-400">{tutorial.duration}</span>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
