@@ -28,3 +28,13 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Force visible spacing for Markdown prose */
+.prose p {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+}
+.prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
