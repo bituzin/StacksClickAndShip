@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
-import { callReadOnlyFunction } from '@stacks/transactions';
+import { callReadOnlyFunction, cvToString, principalCV } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
 
 interface StacksClickAndShipProps {
@@ -44,6 +44,139 @@ export default function StacksClickAndShip({
   const [totalGm, setTotalGm] = React.useState<number | null>(null);
   const [userGm, setUserGm] = React.useState<number | null>(null);
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
+  // Nowe stany do ostatniego GM i leaderboarda
+  const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
+  const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = React.useState<Array<{user: string, total: number}>>([]);
+  // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
+  const fetchLastGmAndLeaderboard = React.useCallback(async () => {
+    try {
+      console.log('Fetching last GM and leaderboard...');
+      // Pobierz ostatnie 3 GM
+      const res = await callReadOnlyFunction({
+        contractAddress: GMOK_CONTRACT_ADDRESS,
+        contractName: GMOK_CONTRACT_NAME,
+        functionName: 'get-last-three-gms',
+        functionArgs: [],
+        network: new StacksMainnet(),
+        senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+      });
+      
+      console.log('Raw response from get-last-three-gms:', res);
+      console.log('Response value:', (res as any).value);
+      console.log('Response value data:', (res as any).value?.data);
+      
+      const gms = (res as any).value?.data;
+      console.log('GMs data:', gms);
+      
+      if (!gms) {
+        console.log('No GMs data found');
+        setLastGm(null);
+        setLastGmAgo(null);
+        setLeaderboard([]);
+        return;
+      }
+      
+      // Sprawdź strukturę first, second, third
+      console.log('First GM:', gms.first);
+      console.log('Second GM:', gms.second);
+      console.log('Third GM:', gms.third);
+      
+      // gms.first, gms.second, gms.third - to są optional types w Clarity
+      // type: 10 = some, type: 9 = none
+      const gmList = [];
+      
+      if (gms.first && gms.first.type === 10) {
+        gmList.push(gms.first.value);
+      }
+      if (gms.second && gms.second.type === 10) {
+        gmList.push(gms.second.value);
+      }
+      if (gms.third && gms.third.type === 10) {
+        gmList.push(gms.third.value);
+      }
+
+      console.log('Filtered GM list:', gmList);
+
+      if (gmList.length > 0) {
+        // Najnowszy GM
+        const last: any = gmList[0];
+        console.log('Last GM structure:', last);
+        console.log('Last GM data:', last.data);
+        
+        // Konwertuj principal na string
+        const userObj = last.data?.user || last.user;
+        const userPrincipal = typeof userObj === 'string' ? userObj : cvToString(userObj);
+        const blockHeightObj = last.data?.['block-height'] || last['block-height'];
+        const blockHeight = typeof blockHeightObj === 'bigint' || typeof blockHeightObj === 'number' 
+          ? blockHeightObj 
+          : blockHeightObj?.value;
+        
+        console.log('Extracted user:', userPrincipal);
+        console.log('Extracted block:', blockHeight);
+        
+        if (userPrincipal) {
+          setLastGm({ user: userPrincipal, block: Number(blockHeight) });
+          
+          // Oblicz ile bloków temu (zakładamy 10 min/block)
+          const currentBlock = await fetchCurrentBlock();
+          const diff = currentBlock - Number(blockHeight);
+          const minutes = diff * 10;
+          setLastGmAgo(minutes < 60 ? `${minutes} min ago` : `${(minutes/60).toFixed(1)} h ago`);
+          console.log('Last GM set:', userPrincipal, `${minutes} min ago`);
+        }
+      } else {
+        console.log('No GMs in list');
+        setLastGm(null);
+        setLastGmAgo(null);
+      }
+
+      // Leaderboard: z tych 3 adresów pobierz total-gms
+      const users = Array.from(new Set(gmList.map((g: any) => {
+        const userObj = g.data?.user || g.user;
+        return typeof userObj === 'string' ? userObj : cvToString(userObj);
+      }).filter(Boolean)));
+      console.log('Unique users for leaderboard:', users);
+      
+      const leaderboardData = await Promise.all(users.map(async (addr: string) => {
+        const res: any = await callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-user-total-gms',
+          functionArgs: [principalCV(addr)],
+          network: new StacksMainnet(),
+          senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+        });
+        // Clarity uint
+        let total = 0;
+        if (res && (res as any).value && (res as any).value.value !== undefined) {
+          const val = (res as any).value.value;
+          total = typeof val === 'string' ? Number(val.replace(/n$/, '')) : Number(val);
+        }
+        return { user: addr, total };
+      }));
+      // Sortuj malejąco
+      leaderboardData.sort((a, b) => b.total - a.total);
+      setLeaderboard(leaderboardData);
+      console.log('Leaderboard set:', leaderboardData);
+    } catch (e) {
+      console.error('Error fetching last GM and leaderboard:', e);
+      setLastGm(null);
+      setLastGmAgo(null);
+      setLeaderboard([]);
+    }
+  }, [userAddress]);
+
+  // Pomocnicza: pobierz aktualny block-height z Hiro API
+  async function fetchCurrentBlock() {
+    try {
+      const res = await fetch('https://api.mainnet.hiro.so/v2/info');
+      const data = await res.json();
+      return data.burn_block_height;
+    } catch {
+      return 0;
+    }
+  }
 
   // Aktualizuj adres użytkownika gdy zmienia się autentykacja
   React.useEffect(() => {
@@ -140,7 +273,8 @@ export default function StacksClickAndShip({
 
   React.useEffect(() => {
     fetchGmCounts();
-  }, [fetchGmCounts]);
+    fetchLastGmAndLeaderboard();
+  }, [fetchGmCounts, fetchLastGmAndLeaderboard]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -282,52 +416,65 @@ export default function StacksClickAndShip({
               <div className="text-center mb-8">
                 <Sun className="text-yellow-400 mx-auto mb-4" size={64} />
                 <h2 className="text-4xl font-bold text-white mb-2">Say GM to Stacks!</h2>
-              
-              <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm">Today's GM</p>
-                  <p className="text-white text-3xl font-bold">{todayGm !== null ? todayGm : '...'}</p>
-                </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm">Total GM</p>
-                  <p className="text-white text-3xl font-bold">{totalGm !== null ? totalGm : '...'}</p>
-                </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm">My GM</p>
-                  <p className="text-white text-3xl font-bold">{userGm !== null ? userGm : (isAuthenticated ? '...' : '—')}</p>
+                <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
+                  <div className="bg-orange-800/30 rounded-lg p-4">
+                    <p className="text-orange-400 text-sm font-bold">Today's GM</p>
+                    <p className="text-white text-3xl font-bold">{todayGm !== null ? todayGm : '...'}</p>
+                  </div>
+                  <div className="bg-orange-800/30 rounded-lg p-4">
+                    <p className="text-orange-400 text-sm font-bold">Total GM</p>
+                    <p className="text-white text-3xl font-bold">{totalGm !== null ? totalGm : '...'}</p>
+                  </div>
+                  <div className="bg-orange-800/30 rounded-lg p-4">
+                    <p className="text-orange-400 text-sm font-bold">My GM</p>
+                    <p className="text-white text-3xl font-bold">{userGm !== null ? userGm : (isAuthenticated ? '...' : '—')}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <button 
-              className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
-              disabled={!isAuthenticated}
-              onClick={handleSayGM}
-            >
-              ☀️ Say GM
-            </button>
+              <button 
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                disabled={!isAuthenticated}
+                onClick={handleSayGM}
+              >
+                ☀️ Say GM
+              </button>
 
-              {!isAuthenticated && (
-                <p className="text-center text-orange-400 mt-4 text-sm">
-                  Connect your wallet to say GM!
-                </p>
+              {/* Ostatni GM - po polsku, ładna karta */}
+              {lastGm && (
+                <div className="mt-6 flex flex-col items-center">
+                  <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full max-w-2xl">
+                    <div className="flex justify-center mb-2">
+                      <span className="text-orange-400 text-sm font-semibold">Last GM sent by:</span>
+                    </div>
+                    <div className="text-white font-mono text-lg whitespace-nowrap overflow-x-auto text-center">{lastGm.user}</div>
+                    <div className="text-orange-400 text-xs mt-1 text-center">{lastGmAgo}</div>
+                  </div>
+                </div>
               )}
 
+              {/* Leaderboard - tabela po polsku */}
               <div className="mt-8">
-                <h3 className="text-xl font-bold text-white mb-4">📊 Leaderboard</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'alice.stx', days: 365, badge: '👑' },
-                    { name: 'bob.btc', days: 180, badge: '🥈' },
-                    { name: 'you.stx', days: 12, badge: '🔥' }
-                  ].map((user, idx) => (
-                    <div key={idx} className="bg-purple-900/40 rounded-lg p-4 flex justify-between items-center">
-                      <span className="text-purple-200">
-                        {idx + 1}. {user.name} {user.badge}
-                      </span>
-                      <span className="text-orange-400 font-bold">{user.days} days</span>
-                    </div>
-                  ))}
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📊</span> Leaderboard
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-purple-900/40 rounded-lg">
+                    <tbody>
+                      {leaderboard.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
+                        </tr>
+                      )}
+                      {leaderboard.map((user, idx) => (
+                        <tr key={user.user} className={idx % 2 === 0 ? "bg-purple-900/60" : ""}>
+                          <td className="px-4 py-2 text-purple-200 font-bold">{idx + 1}</td>
+                          <td className="px-4 py-2 text-purple-100 break-all">{user.user}</td>
+                          <td className="px-4 py-2 text-orange-400 font-bold text-right">{user.total} GM</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
