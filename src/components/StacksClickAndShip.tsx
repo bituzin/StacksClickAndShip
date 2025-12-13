@@ -18,7 +18,6 @@ export default function StacksClickAndShip({
   userSession 
 }: StacksClickAndShipProps) {
   const location = useLocation();
-  const [copied, setCopied] = React.useState(false);
 
   // Determine active tab from pathname
   const path = location.pathname;
@@ -36,14 +35,6 @@ export default function StacksClickAndShip({
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
-  const getUserAddress = () => {
-    if (isAuthenticated && userSession.isUserSignedIn()) {
-      const userData = userSession.loadUserData();
-      return userData.profile.stxAddress.testnet;
-    }
-    return null;
-  };
-
   // Adres kontraktu gmUnlimited
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gmUmlimited';
@@ -52,75 +43,104 @@ export default function StacksClickAndShip({
   const [todayGm, setTodayGm] = React.useState<number | null>(null);
   const [totalGm, setTotalGm] = React.useState<number | null>(null);
   const [userGm, setUserGm] = React.useState<number | null>(null);
+  const [userAddress, setUserAddress] = React.useState<string | null>(null);
 
+  // Aktualizuj adres użytkownika gdy zmienia się autentykacja
   React.useEffect(() => {
-    async function fetchGmCounts() {
-      try {
-        const senderAddress = getUserAddress() || 'SP000000000000000000002Q6VF78';
-        
-        // Helper to parse Clarity response
-        const parseClarityUint = (res: any): number | null => {
-          if (res && res.value && res.value.value !== undefined) {
-            const val = res.value.value;
-            if (typeof val === 'string') {
-              return Number(val.replace(/n$/, ''));
-            }
-            if (typeof val === 'bigint') {
-              return Number(val);
-            }
+    if (isAuthenticated && userSession.isUserSignedIn()) {
+      const userData = userSession.loadUserData();
+      setUserAddress(userData.profile.stxAddress.mainnet);
+    } else {
+      setUserAddress(null);
+    }
+  }, [isAuthenticated, userSession]);
+
+  // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const interval = setInterval(() => {
+      if (userSession.isUserSignedIn()) {
+        const userData = userSession.loadUserData();
+        const currentAddress = userData.profile.stxAddress.mainnet;
+        if (currentAddress !== userAddress) {
+          setUserAddress(currentAddress);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, userAddress, userSession]);
+
+  // Funkcja do pobierania statystyk GM
+  const fetchGmCounts = React.useCallback(async () => {
+    try {
+      const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
+      
+      // Helper to parse Clarity response
+      const parseClarityUint = (res: any): number | null => {
+        if (res && res.value && res.value.value !== undefined) {
+          const val = res.value.value;
+          if (typeof val === 'string') {
+            return Number(val.replace(/n$/, ''));
+          }
+          if (typeof val === 'bigint') {
             return Number(val);
           }
-          return null;
-        };
-        
-        // Today's GM
-        const todayRes = await callReadOnlyFunction({
-          contractAddress: GMOK_CONTRACT_ADDRESS,
-          contractName: GMOK_CONTRACT_NAME,
-          functionName: 'get-daily-gm-count',
-          functionArgs: [],
-          network: new StacksMainnet(),
-          senderAddress,
-        });
-        
-        // Total GM
-        const totalRes = await callReadOnlyFunction({
-          contractAddress: GMOK_CONTRACT_ADDRESS,
-          contractName: GMOK_CONTRACT_NAME,
-          functionName: 'get-total-gms-alltime',
-          functionArgs: [],
-          network: new StacksMainnet(),
-          senderAddress,
-        });
-        
-        setTodayGm(parseClarityUint(todayRes));
-        setTotalGm(parseClarityUint(totalRes));
-        
-        // User's GM (if authenticated)
-        if (isAuthenticated && getUserAddress()) {
-          const { principalCV } = await import('@stacks/transactions');
-          const userRes = await callReadOnlyFunction({
-            contractAddress: GMOK_CONTRACT_ADDRESS,
-            contractName: GMOK_CONTRACT_NAME,
-            functionName: 'get-user-total-gms',
-            functionArgs: [principalCV(getUserAddress()!)],
-            network: new StacksMainnet(),
-            senderAddress,
-          });
-          setUserGm(parseClarityUint(userRes));
-        } else {
-          setUserGm(null);
+          return Number(val);
         }
-      } catch (e) {
-        console.error('GM fetch error', e);
-        setTodayGm(null);
-        setTotalGm(null);
+        return null;
+      };
+      
+      // Today's GM
+      const todayRes = await callReadOnlyFunction({
+        contractAddress: GMOK_CONTRACT_ADDRESS,
+        contractName: GMOK_CONTRACT_NAME,
+        functionName: 'get-daily-gm-count',
+        functionArgs: [],
+        network: new StacksMainnet(),
+        senderAddress,
+      });
+      
+      // Total GM
+      const totalRes = await callReadOnlyFunction({
+        contractAddress: GMOK_CONTRACT_ADDRESS,
+        contractName: GMOK_CONTRACT_NAME,
+        functionName: 'get-total-gms-alltime',
+        functionArgs: [],
+        network: new StacksMainnet(),
+        senderAddress,
+      });
+      
+      setTodayGm(parseClarityUint(todayRes));
+      setTotalGm(parseClarityUint(totalRes));
+      
+      // User's GM (if authenticated)
+      if (isAuthenticated && userAddress) {
+        const { principalCV } = await import('@stacks/transactions');
+        const userRes = await callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-user-total-gms',
+          functionArgs: [principalCV(userAddress)],
+          network: new StacksMainnet(),
+          senderAddress,
+        });
+        setUserGm(parseClarityUint(userRes));
+      } else {
         setUserGm(null);
       }
+    } catch (e) {
+      console.error('GM fetch error', e);
+      setTodayGm(null);
+      setTotalGm(null);
+      setUserGm(null);
     }
-    fetchGmCounts();
-  }, [isAuthenticated]);
+  }, [userAddress, isAuthenticated]);
 
+  React.useEffect(() => {
+    fetchGmCounts();
+  }, [fetchGmCounts]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -136,11 +156,16 @@ export default function StacksClickAndShip({
         icon: window.location.origin + '/vite.svg',
       },
       onFinish: () => {
-        // Możesz dodać powiadomienie lub reload
-        window.location.reload();
+        // Odśwież statystyki po 5 sekundach (dać czas na potwierdzenie transakcji)
+        setTimeout(() => fetchGmCounts(), 5000);
       },
     });
   }
+
+  const handleDisconnect = () => {
+    userSession.signUserOut();
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-900 via-orange-800 to-amber-900">
@@ -151,20 +176,24 @@ export default function StacksClickAndShip({
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
           </div>
-          {isAuthenticated && (
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <div className="text-orange-400 text-sm">
+                Connected: {userAddress}
+              </div>
+              <button
+                onClick={handleDisconnect}
+                className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
             <button
-              className="text-orange-400 text-sm ml-4 whitespace-nowrap hover:underline focus:outline-none"
-              title="Kliknij, aby skopiować pełny adres"
-              onClick={() => {
-                const addr = getUserAddress();
-                if (addr) {
-                  navigator.clipboard.writeText(addr);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1200);
-                }
-              }}
+              onClick={connectWallet}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
-              Connected: {getUserAddress()?.substring(0, 8)}... {copied && <span className="ml-2">Copied!</span>}
+              Connect Wallet
             </button>
           )}
         </div>
@@ -176,74 +205,6 @@ export default function StacksClickAndShip({
           <div className="flex justify-center space-x-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-  
-        React.useEffect(() => {
-          async function fetchGmCounts() {
-            try {
-              const senderAddress = getUserAddress() || 'SP000000000000000000002Q6VF78';
-        
-              // Helper to parse Clarity response
-              const parseClarityUint = (res: any): number | null => {
-                if (res && res.value && res.value.value !== undefined) {
-                  const val = res.value.value;
-                  if (typeof val === 'string') {
-                    return Number(val.replace(/n$/, ''));
-                  }
-                  if (typeof val === 'bigint') {
-                    return Number(val);
-                  }
-                  return Number(val);
-                }
-                return null;
-              };
-        
-              // Today's GM
-              const todayRes = await callReadOnlyFunction({
-                contractAddress: GMOK_CONTRACT_ADDRESS,
-                contractName: GMOK_CONTRACT_NAME,
-                functionName: 'get-daily-gm-count',
-                functionArgs: [],
-                network: new StacksMainnet(),
-                senderAddress,
-              });
-        
-              // Total GM
-              const totalRes = await callReadOnlyFunction({
-                contractAddress: GMOK_CONTRACT_ADDRESS,
-                contractName: GMOK_CONTRACT_NAME,
-                functionName: 'get-total-gms-alltime',
-                functionArgs: [],
-                network: new StacksMainnet(),
-                senderAddress,
-              });
-        
-              setTodayGm(parseClarityUint(todayRes));
-              setTotalGm(parseClarityUint(totalRes));
-        
-              // User's GM (if authenticated)
-              if (isAuthenticated && getUserAddress()) {
-                const { principalCV } = await import('@stacks/transactions');
-                const userRes = await callReadOnlyFunction({
-                  contractAddress: GMOK_CONTRACT_ADDRESS,
-                  contractName: GMOK_CONTRACT_NAME,
-                  functionName: 'get-user-total-gms',
-                  functionArgs: [principalCV(getUserAddress()!)],
-                  network: new StacksMainnet(),
-                  senderAddress,
-                });
-                setUserGm(parseClarityUint(userRes));
-              } else {
-                setUserGm(null);
-              }
-            } catch (e) {
-              console.error('GM fetch error', e);
-              setTodayGm(null);
-              setTotalGm(null);
-              setUserGm(null);
-            }
-          }
-          fetchGmCounts();
-        }, [isAuthenticated]);
               return (
                 <Link
                   key={item.id}
