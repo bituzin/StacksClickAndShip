@@ -36,6 +36,9 @@ export default function StacksClickAndShip({
   ];
 
   // Adres kontraktu gmUnlimited
+  // Adres kontraktu do Post Message
+  const POST_MESSAGE_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
+  const POST_MESSAGE_CONTRACT_NAME = 'post-messagev2';
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gmUmlimited';
 
@@ -44,6 +47,8 @@ export default function StacksClickAndShip({
   const [totalGm, setTotalGm] = React.useState<number | null>(null);
   const [userGm, setUserGm] = React.useState<number | null>(null);
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
+  // Stan dla popupu z transakcją
+  const [txPopup, setTxPopup] = React.useState<{show: boolean, txId: string} | null>(null);
   // Nowe stany do ostatniego GM i leaderboarda
   const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
   const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
@@ -303,6 +308,35 @@ export default function StacksClickAndShip({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-900 via-orange-800 to-amber-900">
+      {/* Popup dla transakcji */}
+      {txPopup?.show && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setTxPopup(null)}
+        >
+          <div 
+            className="bg-gradient-to-br from-orange-900 via-purple-900 to-pink-900 rounded-2xl p-8 border-2 border-orange-400/50 shadow-2xl max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-3xl font-bold text-white mb-4 text-center">✅ Done!</h3>
+            <p className="text-orange-200 text-center mb-6">Your message has been posted to the blockchain.</p>
+            <a
+              href={`https://explorer.hiro.so/txid/${txPopup.txId}?chain=mainnet`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl text-center"
+            >
+              🔗 Check your tx
+            </a>
+            <button
+              onClick={() => setTxPopup(null)}
+              className="mt-4 w-full bg-purple-800/50 hover:bg-purple-700/50 text-white py-2 px-6 rounded-lg transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="bg-black/30 backdrop-blur-sm border-b border-orange-500/30">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
@@ -486,15 +520,54 @@ export default function StacksClickAndShip({
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-6">✍️ Post Message On-Chain</h2>
               
+
+
               <textarea 
+                id="postMessageInput"
                 placeholder="What's on your mind?"
                 className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 h-32 resize-none mb-4"
+                maxLength={280}
+                onInput={e => {
+                  const el = e.target as HTMLTextAreaElement;
+                  const counter = document.getElementById('postMessageCounter');
+                  if (counter) counter.textContent = `${280 - el.value.length} characters left`;
+                }}
               ></textarea>
-              <div className="text-purple-400 text-sm mb-6">0/280 characters</div>
+              <div id="postMessageCounter" className="text-purple-400 text-sm mb-6">280 characters left</div>
 
               <button 
                 className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
                 disabled={!isAuthenticated}
+                onClick={async () => {
+                  if (!isAuthenticated) return;
+                  const input = document.getElementById('postMessageInput');
+                  const value = input && 'value' in input ? input.value : '';
+                  if (!value || value.length === 0) return;
+                  await openContractCall({
+                    network: new StacksMainnet(),
+                    anchorMode: 1,
+                    contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+                    contractName: POST_MESSAGE_CONTRACT_NAME,
+                    functionName: 'post-message',
+                    functionArgs: [
+                      (await import('@stacks/transactions')).stringUtf8CV(value)
+                    ],
+                    appDetails: {
+                      name: 'Stacks Click & Ship',
+                      icon: window.location.origin + '/vite.svg',
+                    },
+                    onFinish: (data) => {
+                      if (input) input.value = '';
+                      const counter = document.getElementById('postMessageCounter');
+                      if (counter) counter.textContent = '280 characters left';
+                      // Wyświetl niestandardowy popup z linkiem
+                      const txId = data?.txId;
+                      if (txId) {
+                        setTxPopup({ show: true, txId });
+                      }
+                    },
+                  });
+                }}
               >
                 📤 Post Message
               </button>
