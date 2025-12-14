@@ -53,7 +53,6 @@ export default function StacksClickAndShip({
   const [todayMessages, setTodayMessages] = React.useState<number | null>(null);
   const [totalMessages, setTotalMessages] = React.useState<number | null>(null);
   const [userMessages, setUserMessages] = React.useState<number | null>(null);
-  const [lastMessage, setLastMessage] = React.useState<any | null>(null);
   const [recentMessages, setRecentMessages] = React.useState<any[]>([]);
   // Nowe stany do ostatniego GM i leaderboarda
   const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
@@ -376,28 +375,18 @@ export default function StacksClickAndShip({
           console.log('Parsed messages:', msgs);
           
           setRecentMessages(msgs);
-          if (msgs.length > 0) {
-            setLastMessage(msgs[msgs.length - 1]); // ostatnia = najnowsza
-            console.log('Last message set:', msgs[msgs.length - 1]);
-          } else {
-            setLastMessage(null);
-            console.log('No messages - setting null');
-          }
         } else {
           console.log('No messages data found');
           setRecentMessages([]);
-          setLastMessage(null);
         }
       } else {
         setRecentMessages([]);
-        setLastMessage(null);
       }
     } catch (e) {
       console.error('Message fetch error', e);
       setTodayMessages(null);
       setTotalMessages(null);
       setUserMessages(null);
-      setLastMessage(null);
       setRecentMessages([]);
     }
   }, [userAddress, isAuthenticated]);
@@ -731,8 +720,8 @@ export default function StacksClickAndShip({
                 disabled={!isAuthenticated}
                 onClick={async () => {
                   if (!isAuthenticated) return;
-                  const input = document.getElementById('postMessageInput');
-                  const value = input && 'value' in input ? input.value : '';
+                  const input = document.getElementById('postMessageInput') as HTMLTextAreaElement | null;
+                  const value: string = input && 'value' in input ? (input.value as string) : '';
                   if (!value || value.length === 0) return;
                   await openContractCall({
                     network: new StacksMainnet(),
@@ -748,7 +737,7 @@ export default function StacksClickAndShip({
                       icon: window.location.origin + '/vite.svg',
                     },
                     onFinish: (data) => {
-                      if (input) input.value = '';
+                      if (input) (input as HTMLTextAreaElement).value = '';
                       const counter = document.getElementById('postMessageCounter');
                       if (counter) counter.textContent = '280 characters left';
                       // Odśwież statystyki po 5 sekundach
@@ -776,15 +765,15 @@ export default function StacksClickAndShip({
                     <tbody>
                       {(() => {
                         // Zlicz liczbę wiadomości dla każdego adresu
-                        const counts = {};
+                        const counts: Record<string, number> = {};
                         recentMessages.forEach(msg => {
                           const addr = cvToString(msg.sender);
                           if (addr) counts[addr] = (counts[addr] || 0) + 1;
                         });
                         // Posortuj malejąco po liczbie wiadomości
-                        const sorted = Object.entries(counts)
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 3);
+                        const sorted: [string, number][] = Object.entries(counts)
+                          .sort((a, b) => (b[1] as number) - (a[1] as number))
+                          .slice(0, 3) as [string, number][];
                         if (sorted.length === 0) {
                           return (
                             <tr>
