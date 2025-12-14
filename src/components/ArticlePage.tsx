@@ -286,7 +286,11 @@ Stacking is ideal for people who:
 
   **In short:** Solidity is a wide highway, Clarity is a safe, narrow road with lots of safeguards.`
   },
-  'build-dapp': { title: '', level: '', content: '' }
+  'build-dapp': {
+    title: 'Build Your First dApp',
+    level: 'Beginner',
+    content: `# Build Your First dApp on Stacks: Start Your Bitcoin Smart Contract Adventure \n\nImagine building an app powered by Bitcoin’s security. That’s exactly what you can do with **Stacks**—creating dApps whose backend lives on a blockchain secured by Bitcoin.\n\n## ⚡ What is a dApp on Stacks?\n\nIt’s an application whose **business logic** is written in a smart contract on the Stacks blockchain, and thanks to the **Proof of Transfer** mechanism, it’s secured by Bitcoin. The frontend is a regular website that communicates with this contract.\n\n## 🧱 Your Stacks Tech Stack\n\n### **1. Smart Contract in Clarity**\nYour “indestructible backend.” You write it in **Clarity**, a readable and secure language.\n\n### **2. Frontend in HTML/JS**\nAny website you like. Host it anywhere—GitHub Pages, Netlify, or even locally.\n\n### **3. Stacks.js – The Bridge to the Blockchain**\nA JavaScript library that lets your site:\n* Connect to the user’s wallet (Hiro, Xverse)\n* Send transactions to your contract\n* Read data from the blockchain\n\n### **4. Wallets**\n**Leather Wallet / Xverse** – wallets your users will interact with.\n\n## 🛠️ Your Starter Tools\n\n**Clarinet** – your best friend for Stacks development. It allows you to:\n* Write and test contracts locally\n* Emulate the Stacks network on your computer\n* Run automated tests for your contracts\n\n**Hiro Explorer** – your portal to the network. Browse contracts, transactions, and addresses on both testnet and mainnet.\n`
+  }
 };
 
 export default function ArticlePage() {
