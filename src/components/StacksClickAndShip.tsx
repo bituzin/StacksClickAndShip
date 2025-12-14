@@ -720,19 +720,54 @@ export default function StacksClickAndShip({
                 📤 Post Message
               </button>
 
-              {/* Last Message */}
-              {lastMessage && (
+
+              {/* Leaderboard - Top 3 users by message count */}
+              {recentMessages.length > 0 && (
                 <div className="mt-6 flex flex-col items-center">
                   <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full">
                     <div className="flex justify-center mb-2">
-                      <span className="text-orange-400 text-sm font-semibold">Last Message sent by:</span>
+                      <span className="text-orange-400 text-sm font-semibold">Top 3 Message Senders</span>
                     </div>
-                    <div className="text-white font-mono text-sm text-center break-all">
-                      {cvToString(lastMessage.sender)}
-                    </div>
-                    <div className="text-orange-200 text-sm mt-2 text-center break-words">
-                      &quot;{lastMessage.content.value}&quot;
-                    </div>
+                    <table className="w-full text-sm text-left">
+                      <thead>
+                        <tr>
+                          <th className="px-4 py-2 text-orange-300">#</th>
+                          <th className="px-4 py-2 text-orange-300">Address</th>
+                          <th className="px-4 py-2 text-orange-300">Messages</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          // Zlicz liczbę wiadomości dla każdego adresu
+                          const counts = {};
+                          recentMessages.forEach(msg => {
+                            const addr = cvToString(msg.sender);
+                            if (addr) counts[addr] = (counts[addr] || 0) + 1;
+                          });
+                          // Posortuj malejąco po liczbie wiadomości
+                          const sorted = Object.entries(counts)
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 3);
+                          return sorted.map(([addr, count], idx) => (
+                            <tr key={addr}>
+                              <td className="px-4 py-2 text-orange-400 font-bold">{idx + 1}</td>
+                              <td className="px-4 py-2 text-orange-200 font-mono text-xs break-all">
+                                <a
+                                  href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline text-orange-300"
+                                  title={addr}
+                                >
+                                  {addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr}
+                                </a>
+                              </td>
+                              <td className="px-4 py-2 text-orange-100">{count}</td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -756,20 +791,71 @@ export default function StacksClickAndShip({
                             <th className="px-3 py-3 text-orange-200 text-left font-semibold">#</th>
                             <th className="px-4 py-3 text-orange-200 text-left font-semibold">Sender</th>
                             <th className="px-4 py-3 text-orange-200 text-left font-semibold">Content</th>
+                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Sent</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-orange-500/20">
-                          {recentMessages.map((msg, idx) => (
-                            <tr key={idx} className="bg-orange-900/20 hover:bg-orange-800/40 transition-colors">
-                              <td className="px-3 py-3 text-orange-400 font-bold">
-                                {recentMessages.length - idx}
-                              </td>
-                              <td className="px-4 py-3 text-orange-200 font-mono text-xs break-all">
-                                {cvToString(msg.sender)}
-                              </td>
-                              <td className="px-4 py-3 text-white break-words">{msg.content.value}</td>
-                            </tr>
-                          ))}
+                          {[...recentMessages].reverse().map((msg, idx) => {
+                            // Wyciągnij blockHeight
+                            let blockHeight = null;
+                            if (msg.block && (typeof msg.block.value === 'number' || typeof msg.block.value === 'bigint')) {
+                              blockHeight = Number(msg.block.value);
+                            } else if (typeof msg.block === 'number' || typeof msg.block === 'bigint') {
+                              blockHeight = Number(msg.block);
+                            }
+                            // Załóż, że aktualny blok to  burn-block-height z ostatniej wiadomości lub max z listy
+                            let currentBlock = null;
+                            if (recentMessages.length > 0) {
+                              const blocks = recentMessages.map(m => m.block && m.block.value ? Number(m.block.value) : (typeof m.block === 'number' ? m.block : 0));
+                              currentBlock = Math.max(...blocks);
+                            }
+                            let ago = '';
+                            if (blockHeight && currentBlock) {
+                              const diff = currentBlock - blockHeight;
+                              const minutes = diff * 10;
+                              ago = minutes < 60 ? `${minutes} min ago` : `${(minutes/60).toFixed(1)} h ago`;
+                            }
+                            return (
+                              <tr key={idx} className="bg-orange-900/20 hover:bg-orange-800/40 transition-colors">
+                                <td className="px-3 py-3 text-orange-400 font-bold">
+                                  {recentMessages.length - idx}
+                                </td>
+                                <td className="px-4 py-3 text-orange-200 font-mono text-xs break-all">
+                                  {(() => {
+                                    const addr = cvToString(msg.sender);
+                                    if (!addr) return '';
+                                    const short = addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr;
+                                    return (
+                                      <a
+                                        href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:underline text-orange-300"
+                                        title={addr}
+                                      >
+                                        {short}
+                                      </a>
+                                    );
+                                  })()}
+                                </td>
+                                <td className="px-4 py-3 text-white break-words text-xs lowercase">
+                                  {(() => {
+                                    let text = '';
+                                    if (msg.content) {
+                                      if (msg.content.value) text = msg.content.value;
+                                      else if (typeof cvToString === 'function') text = cvToString(msg.content).replace(/^"|"$/g, '');
+                                    }
+                                    // Usuń 'u"' na początku, jeśli występuje
+                                    if (text.startsWith('u"')) text = text.slice(2);
+                                    return text;
+                                  })()}
+                                </td>
+                                <td className="px-4 py-3 text-orange-300 text-xs text-right">
+                                  {ago}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
