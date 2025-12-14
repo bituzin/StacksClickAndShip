@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, MessageSquare, CheckSquare, BookOpen, Home } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, cvToString, principalCV } from '@stacks/transactions';
@@ -478,7 +478,18 @@ export default function StacksClickAndShip({
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="text-orange-400 text-sm">
-                Connected: {userAddress}
+                Połączono:
+                {userAddress && (
+                  <a
+                    href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-orange-300 ml-1 font-mono"
+                    title={userAddress}
+                  >
+                    {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
+                  </a>
+                )}
               </div>
               <button
                 onClick={handleDisconnect}
@@ -543,7 +554,7 @@ export default function StacksClickAndShip({
                 </Link>
 
                 <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
-                  <MessageSquare className="text-amber-400 mb-3" size={32} />
+                  <Mail className="text-amber-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
@@ -579,8 +590,10 @@ export default function StacksClickAndShip({
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <div className="text-center mb-8">
-                <Sun className="text-yellow-400 mx-auto mb-4" size={64} />
-                <h2 className="text-4xl font-bold text-white mb-2">Say GM to Stacks!</h2>
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                  <Sun className="text-yellow-400 inline align-middle" size={40} />
+                  <span>Say GM to Stacks!</span>
+                </h2>
                 <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
                   <div className="bg-orange-800/30 rounded-lg p-4">
                     <p className="text-orange-400 text-sm font-bold">Today's GM</p>
@@ -612,7 +625,24 @@ export default function StacksClickAndShip({
                     <div className="flex justify-center mb-2">
                       <span className="text-orange-400 text-sm font-semibold">Last GM sent by:</span>
                     </div>
-                    <div className="text-white font-mono text-lg whitespace-nowrap overflow-x-auto text-center">{lastGm.user}</div>
+                    <div className="text-orange-100 font-mono text-lg whitespace-nowrap overflow-x-auto text-center">
+                      {(() => {
+                        const addr = lastGm.user;
+                        if (!addr) return '';
+                        const short = addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr;
+                        return (
+                          <a
+                            href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline text-orange-300"
+                            title={addr}
+                          >
+                            {short}
+                          </a>
+                        );
+                      })()}
+                    </div>
                     <div className="text-orange-400 text-xs mt-1 text-center">{lastGmAgo}</div>
                   </div>
                 </div>
@@ -623,23 +653,35 @@ export default function StacksClickAndShip({
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <span className="mr-2">📊</span> Leaderboard
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-purple-900/40 rounded-lg">
-                    <tbody>
-                      {leaderboard.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
-                        </tr>
-                      )}
-                      {leaderboard.map((user, idx) => (
-                        <tr key={user.user} className={idx % 2 === 0 ? "bg-purple-900/60" : ""}>
-                          <td className="px-4 py-2 text-purple-200 font-bold">{idx + 1}</td>
-                          <td className="px-4 py-2 text-purple-100 break-all">{user.user}</td>
-                          <td className="px-4 py-2 text-orange-400 font-bold text-right">{user.total} GM</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="overflow-hidden rounded-lg border border-orange-500/30">
+                  <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <table className="min-w-full bg-orange-900/40">
+                      <tbody>
+                        {leaderboard.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
+                          </tr>
+                        )}
+                        {leaderboard.map((user, idx) => (
+                          <tr key={user.user} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                            <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
+                            <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
+                              <a
+                                href={`https://explorer.stacks.co/address/${user.user}?chain=mainnet`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline text-orange-300"
+                                title={user.user}
+                              >
+                                {user.user.length > 16 ? `${user.user.slice(0, 8)}...${user.user.slice(-6)}` : user.user}
+                              </a>
+                            </td>
+                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{user.total} GM</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -649,7 +691,10 @@ export default function StacksClickAndShip({
         {activeTab === 'message' && path.startsWith('/message') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6">✍️ Post Message On-Chain</h2>
+              <h2 className="text-3xl font-bold text-white mb-6 flex items-center justify-center gap-3">
+                <Mail className="inline text-amber-400 align-middle" size={32} />
+                <span>Post Message On-Chain</span>
+              </h2>
               
 
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -721,66 +766,64 @@ export default function StacksClickAndShip({
               </button>
 
 
-              {/* Leaderboard - Top 3 users by message count */}
-              {recentMessages.length > 0 && (
-                <div className="mt-6 flex flex-col items-center">
-                  <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full">
-                    <div className="flex justify-center mb-2">
-                      <span className="text-orange-400 text-sm font-semibold">Top 3 Message Senders</span>
-                    </div>
-                    <table className="w-full text-sm text-left">
-                      <thead>
-                        <tr>
-                          <th className="px-4 py-2 text-orange-300">#</th>
-                          <th className="px-4 py-2 text-orange-300">Address</th>
-                          <th className="px-4 py-2 text-orange-300">Messages</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          // Zlicz liczbę wiadomości dla każdego adresu
-                          const counts = {};
-                          recentMessages.forEach(msg => {
-                            const addr = cvToString(msg.sender);
-                            if (addr) counts[addr] = (counts[addr] || 0) + 1;
-                          });
-                          // Posortuj malejąco po liczbie wiadomości
-                          const sorted = Object.entries(counts)
-                            .sort((a, b) => b[1] - a[1])
-                            .slice(0, 3);
-                          return sorted.map(([addr, count], idx) => (
-                            <tr key={addr}>
-                              <td className="px-4 py-2 text-orange-400 font-bold">{idx + 1}</td>
-                              <td className="px-4 py-2 text-orange-200 font-mono text-xs break-all">
-                                <a
-                                  href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:underline text-orange-300"
-                                  title={addr}
-                                >
-                                  {addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr}
-                                </a>
-                              </td>
-                              <td className="px-4 py-2 text-orange-100">{count}</td>
+              {/* Leaderboard - Top 3 users by message count (styled like GM leaderboard) */}
+              <div className="mt-8">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📊</span> Leaderboard
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-orange-900/40 rounded-lg">
+                    <tbody>
+                      {(() => {
+                        // Zlicz liczbę wiadomości dla każdego adresu
+                        const counts = {};
+                        recentMessages.forEach(msg => {
+                          const addr = cvToString(msg.sender);
+                          if (addr) counts[addr] = (counts[addr] || 0) + 1;
+                        });
+                        // Posortuj malejąco po liczbie wiadomości
+                        const sorted = Object.entries(counts)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 3);
+                        if (sorted.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
                             </tr>
-                          ));
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
+                          );
+                        }
+                        return sorted.map(([addr, count], idx) => (
+                          <tr key={addr} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                            <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
+                            <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
+                              <a
+                                href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline text-orange-300"
+                                title={addr}
+                              >
+                                {addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr}
+                              </a>
+                            </td>
+                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{count} MSG</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </div>
 
-              {/* Recent Messages - Scrollable */}
+              {/* Ostatnie wiadomości - przewijane */}
               {recentMessages.length > 0 && (
                 <div className="mt-8">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
                     <span className="flex items-center">
-                      <span className="mr-2">📊</span> Recent Messages
+                      <Mail className="mr-2 text-orange-300" size={22} /> Recent Messages
                     </span>
                     <span className="text-sm text-orange-300 font-normal">
-                      {recentMessages.length} message{recentMessages.length !== 1 ? 's' : ''}
+                      {recentMessages.length} wiadomość{recentMessages.length !== 1 ? 'i' : ''}
                     </span>
                   </h3>
                   <div className="overflow-hidden rounded-lg border border-orange-500/30">
