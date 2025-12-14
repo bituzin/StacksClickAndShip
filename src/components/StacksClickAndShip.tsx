@@ -49,6 +49,12 @@ export default function StacksClickAndShip({
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
   // Stan dla popupu z transakcją
   const [txPopup, setTxPopup] = React.useState<{show: boolean, txId: string} | null>(null);
+  // Stany dla statystyk Post Message
+  const [todayMessages, setTodayMessages] = React.useState<number | null>(null);
+  const [totalMessages, setTotalMessages] = React.useState<number | null>(null);
+  const [userMessages, setUserMessages] = React.useState<number | null>(null);
+  const [lastMessage, setLastMessage] = React.useState<any | null>(null);
+  const [recentMessages, setRecentMessages] = React.useState<any[]>([]);
   // Nowe stany do ostatniego GM i leaderboarda
   const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
   const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
@@ -276,10 +282,131 @@ export default function StacksClickAndShip({
     }
   }, [userAddress, isAuthenticated]);
 
+  // Funkcja do pobierania statystyk Post Message
+  const fetchMessageCounts = React.useCallback(async () => {
+    try {
+      const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
+      const parseClarityUint = (res: any): number | null => {
+        if (res && res.value && res.value.value !== undefined) {
+          const val = res.value.value;
+          if (typeof val === 'string') {
+            return Number(val.replace(/n$/, ''));
+          }
+          if (typeof val === 'bigint') {
+            return Number(val);
+          }
+          return Number(val);
+        }
+        return null;
+      };
+      
+      // Pobierz statystyki z get-stats
+      const statsRes = await callReadOnlyFunction({
+        contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+        contractName: POST_MESSAGE_CONTRACT_NAME,
+        functionName: 'get-stats',
+        functionArgs: [],
+        network: new StacksMainnet(),
+        senderAddress,
+      });
+      
+      // Wyciągnij dane ze struktury
+      const stats = (statsRes as any)?.value?.data;
+      let totalMessagesCount = 0;
+      if (stats) {
+        const todayVal = stats['today-messages']?.value;
+        const totalVal = stats['total-messages']?.value;
+        totalMessagesCount = typeof totalVal === 'bigint' ? Number(totalVal) : (typeof totalVal === 'string' ? Number(totalVal.replace(/n$/, '')) : Number(totalVal));
+        setTodayMessages(typeof todayVal === 'bigint' ? Number(todayVal) : (typeof todayVal === 'string' ? Number(todayVal.replace(/n$/, '')) : Number(todayVal)));
+        setTotalMessages(totalMessagesCount);
+      }
+      
+      // Pobierz liczbę wiadomości użytkownika
+      if (isAuthenticated && userAddress) {
+        const { principalCV } = await import('@stacks/transactions');
+        const userRes = await callReadOnlyFunction({
+          contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+          contractName: POST_MESSAGE_CONTRACT_NAME,
+          functionName: 'get-user-message-count',
+          functionArgs: [principalCV(userAddress)],
+          network: new StacksMainnet(),
+          senderAddress,
+        });
+        setUserMessages(parseClarityUint(userRes));
+      } else {
+        setUserMessages(null);
+      }
+
+      // Pobierz ostatnie wiadomości (max 20 dozwolone przez kontrakt)
+      if (totalMessagesCount > 0) {
+        const { uintCV } = await import('@stacks/transactions');
+        const count = totalMessagesCount >= 20 ? 20 : totalMessagesCount;
+        const latestRes = await callReadOnlyFunction({
+          contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+          contractName: POST_MESSAGE_CONTRACT_NAME,
+          functionName: 'get-latest-messages',
+          functionArgs: [uintCV(count)],
+          network: new StacksMainnet(),
+          senderAddress,
+        });
+        
+        console.log('Latest messages response:', latestRes);
+        
+        // Parsowanie wiadomości
+        const data = (latestRes as any)?.value?.data;
+        console.log('Latest messages data:', data);
+        console.log('Messages object:', data?.messages);
+        console.log('Messages list:', data?.messages?.list);
+        
+        if (data && data.messages && data.messages.list) {
+          console.log('Messages array length:', data.messages.list.length);
+          console.log('First message raw:', data.messages.list[0]);
+          
+          const msgs = data.messages.list
+            .filter((m: any) => {
+              console.log('Message type:', m?.type, 'Message:', m);
+              return m && m.type === 10;
+            })
+            .map((m: any) => {
+              console.log('Mapping message:', m);
+              console.log('Message value data:', m.value.data);
+              return m.value.data;
+            });
+          
+          console.log('Parsed messages:', msgs);
+          
+          setRecentMessages(msgs);
+          if (msgs.length > 0) {
+            setLastMessage(msgs[msgs.length - 1]); // ostatnia = najnowsza
+            console.log('Last message set:', msgs[msgs.length - 1]);
+          } else {
+            setLastMessage(null);
+            console.log('No messages - setting null');
+          }
+        } else {
+          console.log('No messages data found');
+          setRecentMessages([]);
+          setLastMessage(null);
+        }
+      } else {
+        setRecentMessages([]);
+        setLastMessage(null);
+      }
+    } catch (e) {
+      console.error('Message fetch error', e);
+      setTodayMessages(null);
+      setTotalMessages(null);
+      setUserMessages(null);
+      setLastMessage(null);
+      setRecentMessages([]);
+    }
+  }, [userAddress, isAuthenticated]);
+
   React.useEffect(() => {
     fetchGmCounts();
     fetchLastGmAndLeaderboard();
-  }, [fetchGmCounts, fetchLastGmAndLeaderboard]);
+    fetchMessageCounts();
+  }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -294,9 +421,13 @@ export default function StacksClickAndShip({
         name: 'Stacks Click & Ship',
         icon: window.location.origin + '/vite.svg',
       },
-      onFinish: () => {
+      onFinish: (data) => {
         // Odśwież statystyki po 5 sekundach (dać czas na potwierdzenie transakcji)
         setTimeout(() => fetchGmCounts(), 5000);
+        const txId = data?.txId;
+        if (txId) {
+          setTxPopup({ show: true, txId });
+        }
       },
     });
   }
@@ -521,6 +652,20 @@ export default function StacksClickAndShip({
               <h2 className="text-3xl font-bold text-white mb-6">✍️ Post Message On-Chain</h2>
               
 
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm font-bold">Today's Messages</p>
+                  <p className="text-white text-3xl font-bold">{todayMessages !== null ? todayMessages : '...'}</p>
+                </div>
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm font-bold">Total Messages</p>
+                  <p className="text-white text-3xl font-bold">{totalMessages !== null ? totalMessages : '...'}</p>
+                </div>
+                <div className="bg-orange-800/30 rounded-lg p-4">
+                  <p className="text-orange-400 text-sm font-bold">My Messages</p>
+                  <p className="text-white text-3xl font-bold">{userMessages !== null ? userMessages : (isAuthenticated ? '...' : '—')}</p>
+                </div>
+              </div>
 
               <textarea 
                 id="postMessageInput"
@@ -534,6 +679,7 @@ export default function StacksClickAndShip({
                 }}
               ></textarea>
               <div id="postMessageCounter" className="text-purple-400 text-sm mb-6">280 characters left</div>
+
 
               <button 
                 className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
@@ -560,6 +706,8 @@ export default function StacksClickAndShip({
                       if (input) input.value = '';
                       const counter = document.getElementById('postMessageCounter');
                       if (counter) counter.textContent = '280 characters left';
+                      // Odśwież statystyki po 5 sekundach
+                      setTimeout(() => fetchMessageCounts(), 5000);
                       // Wyświetl niestandardowy popup z linkiem
                       const txId = data?.txId;
                       if (txId) {
@@ -572,31 +720,65 @@ export default function StacksClickAndShip({
                 📤 Post Message
               </button>
 
-              {!isAuthenticated && (
-                <p className="text-center text-purple-400 mb-4 text-sm">
-                  Connect your wallet to post messages!
-                </p>
-              )}
-
-              <h3 className="text-xl font-bold text-white mb-4">📜 Recent Messages</h3>
-              <div className="space-y-4">
-                {[
-                  { author: 'alice.stx', time: '2 blocks ago', msg: 'gm everyone! ☀️', likes: 5, comments: 2 },
-                  { author: 'bob.btc', time: '5 blocks ago', msg: 'STX to the moon 🚀', likes: 12, comments: 8 }
-                ].map((post, idx) => (
-                  <div key={idx} className="bg-purple-900/40 rounded-lg p-4 border border-purple-500/20">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-purple-300 font-medium">{post.author}</span>
-                      <span className="text-purple-500 text-sm">{post.time}</span>
+              {/* Last Message */}
+              {lastMessage && (
+                <div className="mt-6 flex flex-col items-center">
+                  <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full">
+                    <div className="flex justify-center mb-2">
+                      <span className="text-orange-400 text-sm font-semibold">Last Message sent by:</span>
                     </div>
-                    <p className="text-white mb-3">{post.msg}</p>
-                    <div className="flex space-x-4 text-purple-400">
-                      <span>❤️ {post.likes}</span>
-                      <span>💬 {post.comments}</span>
+                    <div className="text-white font-mono text-sm text-center break-all">
+                      {cvToString(lastMessage.sender)}
+                    </div>
+                    <div className="text-orange-200 text-sm mt-2 text-center break-words">
+                      &quot;{lastMessage.content.value}&quot;
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Recent Messages - Scrollable */}
+              {recentMessages.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
+                    <span className="flex items-center">
+                      <span className="mr-2">📊</span> Recent Messages
+                    </span>
+                    <span className="text-sm text-orange-300 font-normal">
+                      {recentMessages.length} message{recentMessages.length !== 1 ? 's' : ''}
+                    </span>
+                  </h3>
+                  <div className="overflow-hidden rounded-lg border border-orange-500/30">
+                    <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <table className="min-w-full bg-orange-900/40">
+                        <thead className="sticky top-0 bg-orange-800/90 backdrop-blur-sm z-10">
+                          <tr>
+                            <th className="px-3 py-3 text-orange-200 text-left font-semibold">#</th>
+                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Sender</th>
+                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Content</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-orange-500/20">
+                          {recentMessages.map((msg, idx) => (
+                            <tr key={idx} className="bg-orange-900/20 hover:bg-orange-800/40 transition-colors">
+                              <td className="px-3 py-3 text-orange-400 font-bold">
+                                {recentMessages.length - idx}
+                              </td>
+                              <td className="px-4 py-3 text-orange-200 font-mono text-xs break-all">
+                                {cvToString(msg.sender)}
+                              </td>
+                              <td className="px-4 py-3 text-white break-words">{msg.content.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <p className="text-xs text-orange-400/70 mt-2 text-center italic">
+                    ↓ Scroll down to see more messages ↓
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
