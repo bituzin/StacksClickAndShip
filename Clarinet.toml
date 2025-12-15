@@ -1,0 +1,7 @@
+[project]
+name = "stacks-click-and-ship"
+
+[contracts.gm-unlimited]
+path = "contracts/gm-unlimited.clar"
+clarity = 4
+epoch = "3.3"

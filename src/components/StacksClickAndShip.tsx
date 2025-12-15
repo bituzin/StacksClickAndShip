@@ -32,6 +32,7 @@ export default function StacksClickAndShip({
     { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
     { id: 'message', label: 'Post', icon: MessageSquare, to: '/message' },
     { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
+    { id: 'getname', label: 'Get Your Name', icon: Mail, to: '/getname' },
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
@@ -907,6 +908,16 @@ export default function StacksClickAndShip({
               <h2 className="text-3xl font-bold text-white mb-4">Vote</h2>
               <p className="text-orange-300 mb-6">Create and participate in on-chain polls.</p>
               {/* Tu pojawi się kreator głosowania */}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'getname' && path.startsWith('/getname') && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-blue-500/30 shadow-2xl">
+              <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
+              <p className="text-blue-300 mb-6">Register your unique username on Stacks blockchain.</p>
+              {/* Tu możesz dodać formularz rejestracji nazwy */}
             </div>
           </div>
         )}
