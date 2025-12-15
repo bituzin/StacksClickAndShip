@@ -2,6 +2,6 @@
 name = "stacks-click-and-ship"
 
 [contracts.gm-unlimited]
-path = "contracts/gm-unlimited.clar"
+path = "contracts/gm-unlimited-cl4.clar"
 clarity = 4
 epoch = "3.3"
