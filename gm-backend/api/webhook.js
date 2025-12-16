@@ -9,17 +9,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Only POST allowed' });
   }
   
-  const authHeader = req.headers.authorization;
-  const expectedAuth = `Bearer ${process.env.WEBHOOK_SECRET}`;
-  
-  console.log('Auth check:', authHeader === expectedAuth ? '✅ Valid' : '❌ Invalid');
-  console.log('Expected:', expectedAuth);
-  console.log('Received:', authHeader);
-  
-  // Temporarily disabled for testing
-  // if (authHeader !== expectedAuth) {
-  //   return res.status(401).json({ error: 'Unauthorized' });
-  // }
+  // NO AUTH CHECK - accepting all requests for testing
   
   try {
     const payload = req.body;
