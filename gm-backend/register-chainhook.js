@@ -18,7 +18,7 @@ async function registerGMChainhook() {
       action: {
         http_post: {
           url: 'https://TWOJ-PROJEKT.vercel.app/api/webhook',
-          authorization_header: 'Bearer moj-tajny-token-12345'
+          authorization_header: 'Bearer z7ir0olxjmAKQTSEvsetnIGgNpuC8Df1'
         }
       }
     });
