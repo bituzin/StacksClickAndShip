@@ -13,7 +13,8 @@
 (define-map messages uint {
   sender: principal,
   block: uint,
-  content: (string-utf8 280)
+  timestamp: uint,
+  content: (string-ascii 280)
 })
 
 ;; Track messages by author for easier filtering
@@ -32,7 +33,7 @@
 )
 
 ;; Public: send a message
-(define-public (post-message (msg (string-utf8 280)))
+(define-public (post-message (msg (string-ascii 280)))
   (let
     (
       (msg-length (len msg))
@@ -40,6 +41,8 @@
       (last-day (var-get last-message-day))
       (msg-id (+ (var-get total-messages) u1))
       (user-msg-count (default-to u0 (map-get? user-message-count tx-sender)))
+      ;; Clarity 4: Use real timestamp
+      (current-timestamp stacks-block-time)
     )
     ;; Validate message length
     (asserts! (and (> msg-length u0) (<= msg-length MAX_LEN)) err-invalid-length)
@@ -53,10 +56,11 @@
       )
     )
     
-    ;; Save message
+    ;; Save message with timestamp
     (map-set messages msg-id {
       sender: tx-sender,
       block: burn-block-height,
+      timestamp: current-timestamp,
       content: msg
     })
     
@@ -221,6 +225,7 @@
       sender: (get sender message),
       content: (get content message),
       block: (get block message),
+      timestamp: (get timestamp message),
       blocks-ago: (- burn-block-height (get block message)),
       message-number: id,
       total-messages: (var-get total-messages)

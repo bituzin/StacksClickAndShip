@@ -1,7 +1,7 @@
 [project]
 name = "stacks-click-and-ship"
 
-[contracts.gm-unlimited]
-path = "contracts/gm-unlimited-cl4.clar"
+[contracts.postMessage-cl4]
+path = "contracts/postMessage-cl4.clar"
 clarity = 4
 epoch = "3.3"
