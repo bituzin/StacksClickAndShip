@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@hirosystems/chainhooks-client": "^1.0.0"
+    "@hirosystems/chainhooks-client": "^1.0.0",
+    "dotenv": "^17.2.3",
+    "undici": "^7.16.0"
   }
 }

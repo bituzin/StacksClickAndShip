@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { ChainhooksClient, CHAINHOOKS_BASE_URL } from '@hirosystems/chainhooks-client';
 
 const client = new ChainhooksClient({
@@ -9,17 +10,20 @@ async function registerGMChainhook() {
   try {
     const chainhook = await client.registerChainhook({
       name: 'GM Unlimited Monitor',
+      version: 1,
       chain: 'stacks',
       network: 'mainnet',
       filters: {
-        contract_id: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86.gm-unlimited',
-        method: 'say-gm'
+        events: [{
+          type: 'contract_call',
+          contract_identifier: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86.gm-unlimited',
+          method: 'say-gm'
+        }]
       },
       action: {
-        http_post: {
-          url: 'https://gm-backend-nine.vercel.app/api/webhook',
-          authorization_header: 'Bearer z7ir0olxjmAKQTSEvsetnIGgNpuC8Df1'
-        }
+        type: 'http_post',
+        url: 'https://gm-backend-nine.vercel.app/api/webhook',
+        authorization_header: 'Bearer z7ir0olxjmAKQTSEvsetnIGgNpuC8Df1'
       }
     });
     
