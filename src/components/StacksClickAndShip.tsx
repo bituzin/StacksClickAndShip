@@ -41,7 +41,7 @@ export default function StacksClickAndShip({
   const POST_MESSAGE_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const POST_MESSAGE_CONTRACT_NAME = 'post-messagev2';
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  const GMOK_CONTRACT_NAME = 'gmUmlimited';
+  const GMOK_CONTRACT_NAME = 'gm-unlimited';
 
   // State for GM counts
   const [todayGm, setTodayGm] = React.useState<number | null>(null);
