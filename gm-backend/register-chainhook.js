@@ -17,7 +17,7 @@ async function registerGMChainhook() {
       },
       action: {
         http_post: {
-          url: 'https://TWOJ-PROJEKT.vercel.app/api/webhook',
+          url: 'https://gm-backend-nine.vercel.app/api/webhook',
           authorization_header: 'Bearer z7ir0olxjmAKQTSEvsetnIGgNpuC8Df1'
         }
       }
