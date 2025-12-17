@@ -39,7 +39,7 @@ export default function StacksClickAndShip({
   // Adres kontraktu gmUnlimited
   // Adres kontraktu do Post Message
   const POST_MESSAGE_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  const POST_MESSAGE_CONTRACT_NAME = 'post-messagev2';
+  const POST_MESSAGE_CONTRACT_NAME = 'postMessage-cl4';
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gm-unlimited';
 
@@ -219,6 +219,50 @@ export default function StacksClickAndShip({
   // Funkcja do pobierania statystyk GM
   const fetchGmCounts = React.useCallback(async () => {
     try {
+      // Najpierw spróbuj backend API (szybszy cache)
+      try {
+        const backendUrl = 'https://gm-backend-nine.vercel.app/api/stats';
+        const response = await fetch(backendUrl);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📊 Stats from backend:', data);
+          setTodayGm(data.todayGm);
+          setTotalGm(data.totalGm);
+          
+          // Pobierz tylko user stats z blockchain
+          if (isAuthenticated && userAddress) {
+            const { principalCV } = await import('@stacks/transactions');
+            const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
+            const userRes = await callReadOnlyFunction({
+              contractAddress: GMOK_CONTRACT_ADDRESS,
+              contractName: GMOK_CONTRACT_NAME,
+              functionName: 'get-user-total-gms',
+              functionArgs: [principalCV(userAddress)],
+              network: new StacksMainnet(),
+              senderAddress,
+            });
+            const parseClarityUint = (res: any): number | null => {
+              if (res && res.value && res.value.value !== undefined) {
+                const val = res.value.value;
+                if (typeof val === 'string') return Number(val.replace(/n$/, ''));
+                if (typeof val === 'bigint') return Number(val);
+                return Number(val);
+              }
+              return null;
+            };
+            setUserGm(parseClarityUint(userRes));
+          } else {
+            setUserGm(null);
+          }
+          
+          console.log('✅ Using backend stats (faster!)');
+          return; // Sukces - nie pytaj blockchain
+        }
+      } catch (backendError) {
+        console.log('⚠️ Backend failed, falling back to blockchain:', backendError);
+      }
+      
+      // Fallback: pobierz z blockchain (wolniejsze)
       const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
       
       // Helper to parse Clarity response
@@ -274,6 +318,8 @@ export default function StacksClickAndShip({
       } else {
         setUserGm(null);
       }
+      
+      console.log('📡 Using blockchain stats (slower fallback)');
     } catch (e) {
       console.error('GM fetch error', e);
       setTodayGm(null);
@@ -731,7 +777,7 @@ export default function StacksClickAndShip({
                     contractName: POST_MESSAGE_CONTRACT_NAME,
                     functionName: 'post-message',
                     functionArgs: [
-                      (await import('@stacks/transactions')).stringUtf8CV(value)
+                      (await import('@stacks/transactions')).stringAsciiCV(value)
                     ],
                     appDetails: {
                       name: 'Stacks Click & Ship',
