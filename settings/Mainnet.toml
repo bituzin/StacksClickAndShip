@@ -1,0 +1,9 @@
+[network]
+id = "mainnet"
+name = "mainnet"
+stacks_node = "https://api.hiro.so"
+deployment_fee_rate = 10
+
+[accounts.deployer]
+mnemonic = "tennis hobby evoke purity above position achieve siren host penalty foot like reveal shift episode address income lumber combine hotel bottom involve deer apart"
+address = "SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86"
