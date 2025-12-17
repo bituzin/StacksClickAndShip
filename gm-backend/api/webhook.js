@@ -1,4 +1,21 @@
+// Prosty in-memory counter (resetuje się przy redeploy, ale lepsze niż nic)
+let gmCounter = {
+  total: 0,
+  today: 0,
+  lastUpdate: Date.now()
+};
+
 export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   // Log everything first for debugging
   console.log('🔔 Webhook called!');
   console.log('Method:', req.method);
@@ -21,14 +38,22 @@ export default async function handler(req, res) {
     
     console.log(`📨 Received ${events.length} GM events`);
     
+    // Aktualizuj counter
+    gmCounter.total += events.length;
+    gmCounter.today += events.length;
+    gmCounter.lastUpdate = Date.now();
+    
     for (const event of events) {
       console.log('☀️ GM from:', event.sender);
       console.log('   TX:', event.transaction_id);
     }
     
+    console.log(`📊 Counter updated: total=${gmCounter.total}, today=${gmCounter.today}`);
+    
     res.status(200).json({ 
       success: true, 
-      processed: events.length 
+      processed: events.length,
+      counter: gmCounter
     });
     
   } catch (error) {
@@ -36,3 +61,6 @@ export default async function handler(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
+// Export counter dla innych endpointów (jeśli potrzeba)
+export { gmCounter };
