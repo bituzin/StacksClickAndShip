@@ -963,19 +963,26 @@ export default function StacksClickAndShip({
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
-              <div className="flex items-center mb-6">
-                <input
-                  type="text"
-                  placeholder="Enter your name..."
-                  className="flex-1 rounded-l-lg px-4 py-2 bg-white/80 text-black focus:outline-none focus:ring-2 focus:ring-purple-400 text-base h-12"
-                  style={{ minWidth: 0 }}
-                />
-                <button
-                  className="rounded-r-lg bg-purple-500 hover:bg-purple-600 text-white px-6 h-12 font-semibold text-base transition-colors"
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  Check
-                </button>
+              <div className="flex flex-col mb-6">
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    placeholder="Enter your name..."
+                    className="flex-1 rounded-l-lg px-4 py-2 bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 text-base h-12"
+                    style={{ minWidth: 0 }}
+                  />
+                </div>
+                <span className="text-orange-400 text-base font-semibold mt-3 mb-3 text-center select-none">What will your name be?</span>
+                <div className="flex items-center">
+                  <span className="bg-transparent border-none text-purple-200 px-3 h-12 flex items-center font-mono text-base select-none">.stacks</span>
+                  <span className="flex-1"></span>
+                  <button
+                    className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl ml-4"
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    Check
+                  </button>
+                </div>
               </div>
             </div>
           </div>
