@@ -221,7 +221,7 @@ export default function StacksClickAndShip({
     try {
       // Najpierw spróbuj backend API (szybszy cache)
       try {
-        const backendUrl = 'https://gm-backend-nine.vercel.app/api/stats';
+        const backendUrl = 'https://gm-backend.vercel.app/api/stats';
         const response = await fetch(backendUrl);
         if (response.ok) {
           const data = await response.json();
