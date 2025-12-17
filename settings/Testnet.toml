@@ -1,0 +1,7 @@
+[network]
+id = "testnet"
+name = "testnet"
+deployment_fee_rate = 10
+
+[accounts.deployer]
+mnemonic = "tennis hobby evoke purity above position achieve siren host penalty foot like reveal shift episode address income lumber combine hotel bottom involve deer apart"
