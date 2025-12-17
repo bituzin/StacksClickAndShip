@@ -25,6 +25,7 @@ export default function StacksClickAndShip({
   if (path.startsWith('/gm')) activeTab = 'gm';
   else if (path.startsWith('/message')) activeTab = 'message';
   else if (path.startsWith('/vote')) activeTab = 'vote';
+  else if (path.startsWith('/getname')) activeTab = 'getname';
   else if (path === '/learn') activeTab = 'learn';
 
   const menuItems = [
@@ -960,10 +961,22 @@ export default function StacksClickAndShip({
 
         {activeTab === 'getname' && path.startsWith('/getname') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-blue-500/30 shadow-2xl">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
-              <p className="text-blue-300 mb-6">Register your unique username on Stacks blockchain.</p>
-              {/* Tu możesz dodać formularz rejestracji nazwy */}
+              <div className="flex items-center mb-6">
+                <input
+                  type="text"
+                  placeholder="Enter your name..."
+                  className="flex-1 rounded-l-lg px-4 py-2 bg-white/80 text-black focus:outline-none focus:ring-2 focus:ring-purple-400 text-base h-12"
+                  style={{ minWidth: 0 }}
+                />
+                <button
+                  className="rounded-r-lg bg-purple-500 hover:bg-purple-600 text-white px-6 h-12 font-semibold text-base transition-colors"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  Check
+                </button>
+              </div>
             </div>
           </div>
         )}
