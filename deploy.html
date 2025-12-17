@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deploy GM Contract</title>
+    <title>Deploy Contract - Stacks</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -62,26 +62,36 @@
         }
         .status.success { border-left-color: #4caf50; }
         .status.error { border-left-color: #f44336; }
-        select {
+        select, input, textarea {
             background: rgba(255, 255, 255, 0.1);
             color: white;
             border: 1px solid rgba(255, 123, 0, 0.3);
             padding: 12px 20px;
             border-radius: 8px;
             font-size: 16px;
-            margin: 10px 0 20px 0;
+            margin: 10px 0;
+        }
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 100%;
+            max-width: 300px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Deploy GM Contract (Clarity 4)</h1>
+        <h1>🚀 Deploy Smart Contract (Clarity 4)</h1>
         
         <div class="alert">
             <strong>⚠️ Przed deployem:</strong>
             <ul style="margin-left:20px; margin-top:10px;">
                 <li>Zainstaluj Leather Wallet</li>
-                <li>Zaimportuj seed phrase</li>
+                <li>Połącz portfel</li>
                 <li>Upewnij się że masz ≥0.01 STX</li>
             </ul>
         </div>
@@ -89,8 +99,8 @@
         <div>
             <label><strong>Sieć:</strong></label><br>
             <select id="network">
-                <option value="mainnet">🌐 Mainnet</option>
-                <option value="testnet" selected>🧪 Testnet</option>
+                <option value="mainnet" selected>🌐 Mainnet</option>
+                <option value="testnet">🧪 Testnet</option>
             </select>
         </div>
 
@@ -98,28 +108,17 @@
         <button id="deployBtn" disabled>📤 Deploy Contract</button>
 
         <div class="contract-preview">
-            <strong>📄 Kod kontraktu (Clarity 4):</strong><br><br>
+            <strong>📄 Deployment</strong><br><br>
             <label><strong>Nazwa kontraktu:</strong></label><br>
-            <input type="text" id="contractName" value="gm" style="width: 100%; max-width: 300px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,123,0,0.3); padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <input type="text" id="contractName" value="post-message" placeholder="my-contract">
             <br><br>
-            <label><strong>Wklej kod kontraktu:</strong></label><br>
-            <textarea id="contractCode" style="width: 100%; min-height: 300px; background: rgba(0,0,0,0.5); color: #a9a9a9; border: 1px solid rgba(255,123,0,0.3); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; margin-top: 10px;">;; Simple GM Contract (Clarity 4)
-
-(define-data-var total-gms uint u0)
-
-(define-public (say-gm)
-  (var-set total-gms (+ (var-get total-gms) u1))
-  (ok (var-get total-gms))
-)
-
-(define-read-only (get-total-gms)
-  (ok (var-get total-gms))
-)</textarea>
+            <label><strong>Kod kontraktu (Clarity):</strong></label><br>
+            <textarea id="contractCode" placeholder="Wklej kod kontraktu Clarity..."></textarea>
         </div>
 
         <div id="status" class="status"></div>
     </div>
 
-    <script type="module" src="/src/deploy-app.js"></script>
+    <script type="module" src="/src/deploy-standalone.js"></script>
 </body>
 </html>

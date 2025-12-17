@@ -1,80 +1,54 @@
+
+
+
+
 # StacksClickAndShip 🚀
 
-Kompletna aplikacja na blockchain Stacks z funkcjami: GM broadcaster, message board, contract deployer i edukacja.
+[Live Demo](https://stacks-click-and-ship.vercel.app)
 
-## 🎯 Funkcje
+A complete dApp for the Stacks blockchain with features: GM broadcaster, message board, voting portal, and learning section.
 
-- **GM Broadcaster** - Wysyłaj powitania on-chain i buduj swoją passę
-- **Message Board** - Publikuj niezmienne wiadomości na blockchainie
-- **Contract Deployer** - Wdrażaj smart contracty w Clarity
-- **Learn Section** - Interaktywne tutoriale i dokumentacja
+## 🎯 Features
 
-## 🛠️ Technologie
+- **GM Broadcaster** – Send GM on-chain and build your streak
+- **Message Board** – Post immutable messages to the blockchain
+- **Voting Portal** – Create polls and vote in on-chain polls
+- **Learn Section** – Interactive tutorials and documentation
+
+## 🛠️ Technologies
 
 - React 18
 - TypeScript
 - Vite
 - Tailwind CSS
 - Stacks.js (@stacks/connect, @stacks/transactions)
-- Lucide React (ikony)
+- Lucide React (icons)
 
-## 📦 Instalacja
 
-1. Zainstaluj zależności:
-```bash
-npm install
-```
 
-2. Skopiuj plik środowiskowy:
-```bash
-copy .env.example .env
-```
+## 📝 How to use
 
-3. Uruchom aplikację deweloperską:
-```bash
-npm run dev
-```
+1. **Connect your wallet** – Click "Connect Wallet" to connect a Stacks wallet (Hiro Wallet, Xverse)
+2. **Say GM** – Send a GM on-chain and build your streak
+3. **Post Messages** – Publish messages to the blockchain
+4. **Voting Portal** – Create polls or vote in existing polls
+5. **Learn** – Learn about Stacks and Bitcoin Layer 2
 
-Aplikacja uruchomi się na `http://localhost:3000`
-
-## 🔧 Dostępne Komendy
-
-- `npm run dev` - Uruchomienie serwera deweloperskiego
-- `npm run build` - Budowanie aplikacji produkcyjnej
-- `npm run preview` - Podgląd zbudowanej aplikacji
-- `npm run lint` - Sprawdzanie kodu
-
-## 🌐 Konfiguracja Sieci
-
-Domyślnie aplikacja jest skonfigurowana dla **Stacks Testnet**. 
-
-Możesz zmienić to w pliku `.env`:
-- `VITE_STACKS_NETWORK` - testnet lub mainnet
-- `VITE_STACKS_API_URL` - URL API Stacks
-
-## 📝 Jak używać
-
-1. **Połącz portfel** - Kliknij "Connect Wallet" aby połączyć portfel Stacks (Hiro Wallet, Xverse)
-2. **Say GM** - Wyślij powitanie on-chain i buduj swoją passę
-3. **Post Messages** - Publikuj wiadomości na blockchainie
-4. **Deploy Contracts** - Wdróż smart contract w języku Clarity
-5. **Learn** - Ucz się o Stacks i Bitcoin Layer 2
-
-## 🔗 Przydatne Linki
+## 🔗 Useful Links
 
 - [Stacks Documentation](https://docs.stacks.co/)
 - [Clarity Language](https://docs.stacks.co/clarity/)
 - [Stacks Explorer](https://explorer.stacks.co/)
-- [Hiro Wallet](https://wallet.hiro.so/)
+- [Leather Wallet](https://leather.io/)
 
-## 📄 Licencja
+
+## 📄 License
 
 MIT
 
-## 🤝 Wsparcie
+## 🤝 Support
 
-Masz pytania? Otwórz issue na GitHubie!
+Questions? Open an issue on GitHub!
 
 ---
 
-Built with ❤️ for Stacks ecosystem

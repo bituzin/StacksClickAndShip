@@ -1,0 +1,7 @@
+[project]
+name = "stacks-click-and-ship"
+
+[contracts.username-test-v2]
+path = "contracts/username-test-v2.clar"
+clarity = 4
+epoch = "3.3"

@@ -27,3 +27,11 @@ dist-ssr
 .env
 .env.local
 .env.production
+.env.*
+
+# Clarinet sensitive files (contains mnemonics/private keys)
+settings/
+deployments/
+
+# Clarinet build artifacts
+clarinet/target/
