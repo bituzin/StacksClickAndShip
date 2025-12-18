@@ -78,6 +78,16 @@ function App() {
             />
           }
         />
+        <Route 
+          path="/getname"
+          element={
+            <StacksClickAndShip 
+              isAuthenticated={isAuthenticated}
+              connectWallet={connectWallet}
+              userSession={userSession}
+            />
+          }
+        />
         <Route path="/learn/:slug" element={<ArticlePage />} />
       </Routes>
     </div>
