@@ -547,7 +547,7 @@ export default function StacksClickAndShip({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-3xl font-bold text-white mb-4 text-center">✅ Done!</h3>
-            <p className="text-orange-200 text-center mb-6">Your message has been posted to the blockchain.</p>
+            <p className="text-orange-200 text-center mb-6">Your transaction has been sent to the blockchain.</p>
             <a
               href={`https://explorer.hiro.so/txid/${txPopup.txId}?chain=mainnet`}
               target="_blank"
@@ -1165,15 +1165,24 @@ export default function StacksClickAndShip({
       {/* Popup - Name is taken */}
       {showTakenPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowTakenPopup(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-orange-400" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
-              <div className="text-6xl mb-4">❗</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">This name is already taken</h3>
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
+                <span className="text-4xl">❌</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-3">Oops!</h3>
+              <p className="text-white text-lg mb-6">This name is already taken.</p>
               <button
-                className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 py-3 font-bold text-lg transition-all shadow-lg hover:shadow-xl mb-3"
                 onClick={() => setShowTakenPopup(false)}
               >
-                OK
+                Try Another Name
+              </button>
+              <button
+                className="text-white text-base hover:text-gray-200 transition-all"
+                onClick={() => setShowTakenPopup(false)}
+              >
+                Close
               </button>
             </div>
           </div>
@@ -1183,45 +1192,64 @@ export default function StacksClickAndShip({
       {/* Popup - Name is available */}
       {showAvailablePopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowAvailablePopup(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-orange-400" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
-              <div className="text-6xl mb-4">✓</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Name available</h3>
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
+                <span className="text-4xl text-green-500">✓</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-3">Great!</h3>
+              <p className="text-white text-lg mb-6">This name is available for you.</p>
               {isAuthenticated ? (
-                <button
-                  className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
-                  onClick={async () => {
-                    setShowAvailablePopup(false);
-                    try {
-                      const { stringAsciiCV } = await import('@stacks/transactions');
-                      await openContractCall({
-                        contractAddress: GET_NAME_CONTRACT_ADDRESS,
-                        contractName: GET_NAME_CONTRACT_NAME,
-                        functionName: 'register-username',
-                        functionArgs: [stringAsciiCV(inputName)],
-                        network: new StacksMainnet(),
-                        onFinish: (data: any) => {
-                          console.log('Transaction submitted:', data);
-                          setTxPopup({ show: true, txId: data.txId });
-                          setInputName('');
-                          // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
-                          setTimeout(() => {
-                            checkUserName();
-                          }, 3000);
-                        },
-                        onCancel: () => {
-                          console.log('Transaction cancelled');
-                        },
-                      });
-                    } catch (e) {
-                      console.error('Error registering username:', e);
-                    }
-                  }}
-                >
-                  Register
-                </button>
+                <>
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 py-3 font-bold text-lg transition-all shadow-lg hover:shadow-xl mb-3"
+                    onClick={async () => {
+                      setShowAvailablePopup(false);
+                      try {
+                        const { stringAsciiCV } = await import('@stacks/transactions');
+                        await openContractCall({
+                          contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                          contractName: GET_NAME_CONTRACT_NAME,
+                          functionName: 'register-username',
+                          functionArgs: [stringAsciiCV(inputName)],
+                          network: new StacksMainnet(),
+                          onFinish: (data: any) => {
+                            console.log('Transaction submitted:', data);
+                            setTxPopup({ show: true, txId: data.txId });
+                            setInputName('');
+                            // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
+                            setTimeout(() => {
+                              checkUserName();
+                            }, 3000);
+                          },
+                          onCancel: () => {
+                            console.log('Transaction cancelled');
+                          },
+                        });
+                      } catch (e) {
+                        console.error('Error registering username:', e);
+                      }
+                    }}
+                  >
+                    Register Now
+                  </button>
+                  <button
+                    className="text-white text-base hover:text-gray-200 transition-all"
+                    onClick={() => setShowAvailablePopup(false)}
+                  >
+                    Close
+                  </button>
+                </>
               ) : (
-                <div className="text-orange-600 text-sm">Connect your wallet to register this name</div>
+                <>
+                  <div className="text-white text-base mb-4">Connect your wallet to register this name</div>
+                  <button
+                    className="text-white text-base hover:text-gray-200 transition-all"
+                    onClick={() => setShowAvailablePopup(false)}
+                  >
+                    Close
+                  </button>
+                </>
               )}
             </div>
           </div>
