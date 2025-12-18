@@ -43,6 +43,10 @@ export default function StacksClickAndShip({
   const POST_MESSAGE_CONTRACT_NAME = 'postMessage-cl4';
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gm-unlimited';
+  
+  // Adres i nazwa kontraktu get-name-v1
+  const GET_NAME_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
+  const GET_NAME_CONTRACT_NAME = 'get-name-v1';
 
   // State for GM counts
   const [todayGm, setTodayGm] = React.useState<number | null>(null);
@@ -60,6 +64,14 @@ export default function StacksClickAndShip({
   const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
   const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
   const [leaderboard, setLeaderboard] = React.useState<Array<{user: string, total: number}>>([]);
+  // Stan dla wpisanej nazwy i wyniku sprawdzenia
+  const [inputName, setInputName] = React.useState('');
+  // Stan dla użytkownika z już zarejestrowaną nazwą
+  const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
+  // Stany dla popupów z wynikiem sprawdzenia
+  const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
+  const [showTakenPopup, setShowTakenPopup] = React.useState(false);
   // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
     try {
@@ -216,6 +228,54 @@ export default function StacksClickAndShip({
 
     return () => clearInterval(interval);
   }, [isAuthenticated, userAddress, userSession]);
+
+  // Funkcja do sprawdzania nazwy użytkownika (wydzielona, żeby można było wywoływać wielokrotnie)
+  const checkUserName = React.useCallback(async () => {
+    if (!isAuthenticated || !userAddress) {
+      setCurrentUsername(null);
+      setIsCheckingUsername(false);
+      return;
+    }
+    setIsCheckingUsername(true);
+    try {
+      const res = await callReadOnlyFunction({
+        contractAddress: GET_NAME_CONTRACT_ADDRESS,
+        contractName: GET_NAME_CONTRACT_NAME,
+        functionName: 'get-address-username',
+        functionArgs: [principalCV(userAddress)],
+        network: new StacksMainnet(),
+        senderAddress: userAddress,
+      });
+      console.log('Response from get-address-username:', res);
+      // Jeśli zwrócono some, użytkownik ma nazwę
+      if ((res as any).type === 10) { // some
+        const username = cvToString((res as any).value);
+        console.log('User has username:', username);
+        setCurrentUsername(username);
+      } else {
+        console.log('User has no username');
+        setCurrentUsername(null);
+      }
+    } catch (e) {
+      console.error('Error checking user name:', e);
+      setCurrentUsername(null);
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  }, [isAuthenticated, userAddress]);
+
+  // Sprawdź nazwę przy zmianie adresu
+  React.useEffect(() => {
+    checkUserName();
+  }, [checkUserName]);
+
+  // Sprawdź nazwę przy wejściu na zakładkę getname
+  React.useEffect(() => {
+    if (activeTab === 'getname') {
+      console.log('Entering getname tab, checking username...');
+      checkUserName();
+    }
+  }, [activeTab, checkUserName]);
 
   // Funkcja do pobierania statystyk GM
   const fetchGmCounts = React.useCallback(async () => {
@@ -487,7 +547,7 @@ export default function StacksClickAndShip({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-3xl font-bold text-white mb-4 text-center">✅ Done!</h3>
-            <p className="text-orange-200 text-center mb-6">Your message has been posted to the blockchain.</p>
+            <p className="text-orange-200 text-center mb-6">Your transaction has been sent to the blockchain.</p>
             <a
               href={`https://explorer.hiro.so/txid/${txPopup.txId}?chain=mainnet`}
               target="_blank"
@@ -963,27 +1023,110 @@ export default function StacksClickAndShip({
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
-              <div className="flex flex-col mb-6">
-                <div className="flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Enter your name..."
-                    className="flex-1 rounded-l-lg px-4 py-2 bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 text-base h-12"
-                    style={{ minWidth: 0 }}
-                  />
+              
+              {/* Loader podczas sprawdzania */}
+              {isCheckingUsername && (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400"></div>
+                  <div className="text-orange-400 text-lg">Checking your name...</div>
                 </div>
-                <span className="text-orange-400 text-base font-semibold mt-3 mb-3 text-center select-none">What will your name be?</span>
-                <div className="flex items-center">
-                  <span className="bg-transparent border-none text-purple-200 px-3 h-12 flex items-center font-mono text-base select-none">.stacks</span>
-                  <span className="flex-1"></span>
+              )}
+
+              {/* Jeśli użytkownik ma już nazwę */}
+              {!isCheckingUsername && currentUsername !== null && (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="text-center text-xl font-semibold text-orange-400">
+                    You already have a name: <span className="text-white">{currentUsername}.stacks</span>
+                  </div>
                   <button
-                    className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl ml-4"
-                    style={{ whiteSpace: 'nowrap' }}
+                    className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                    onClick={async () => {
+                      try {
+                        const { stringAsciiCV } = await import('@stacks/transactions');
+                        // Usuń podwójne cudzysłowy z początku i końca, jeśli są
+                        const cleanUsername = currentUsername.replace(/^"+|"+$/g, '');
+                        await openContractCall({
+                          contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                          contractName: GET_NAME_CONTRACT_NAME,
+                          functionName: 'release-username',
+                          functionArgs: [stringAsciiCV(cleanUsername)],
+                          network: new StacksMainnet(),
+                          onFinish: (data: any) => {
+                            console.log('Transaction submitted:', data);
+                            setTxPopup({ show: true, txId: data.txId });
+                            // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
+                            setTimeout(() => {
+                              checkUserName();
+                            }, 3000);
+                          },
+                          onCancel: () => {
+                            console.log('Transaction cancelled');
+                          },
+                        });
+                      } catch (e) {
+                        console.error('Error releasing username:', e);
+                      }
+                    }}
                   >
-                    Check
+                    Release Name
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* Jeśli użytkownik nie ma nazwy */}
+              {!isCheckingUsername && currentUsername === null && (
+                <div className="flex flex-col mb-6">
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      value={inputName}
+                      onChange={e => setInputName(e.target.value)}
+                      placeholder="Enter your name..."
+                      className="flex-1 rounded-l-lg px-4 py-2 bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 text-base h-12"
+                      style={{ minWidth: 0 }}
+                    />
+                    <span className="bg-transparent border-none text-orange-400 px-3 h-12 flex items-center font-mono text-base font-bold select-none">.stacks</span>
+                  </div>
+                  <div style={{ height: '1rem' }} />
+                  <div className="flex flex-col items-center gap-3">
+                    <button
+                      className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                      style={{ whiteSpace: 'nowrap' }}
+                      onClick={async () => {
+                        if (!inputName) return;
+                        try {
+                          const { stringAsciiCV } = await import('@stacks/transactions');
+                          const res = await callReadOnlyFunction({
+                            contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                            contractName: GET_NAME_CONTRACT_NAME,
+                            functionName: 'is-username-available',
+                            functionArgs: [stringAsciiCV(inputName)],
+                            network: new StacksMainnet(),
+                            senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+                          });
+                          console.log('Response from is-username-available:', res);
+                          console.log('Response type:', (res as any).type);
+                          // Odpowiedź jest bezpośrednio w res, a nie res.value
+                          // type 3 = true (dostępna), type 4 = false (zajęta)
+                          const available = (res as any).type === 3;
+                          console.log('Is available:', available);
+                          
+                          // Pokaż odpowiedni popup
+                          if (available) {
+                            setShowAvailablePopup(true);
+                          } else {
+                            setShowTakenPopup(true);
+                          }
+                        } catch (e) {
+                          console.error('Error checking availability:', e);
+                        }
+                      }}
+                    >
+                      Check
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1018,6 +1161,102 @@ export default function StacksClickAndShip({
           </div>
         )}
       </main>
+
+      {/* Popup - Name is taken */}
+      {showTakenPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowTakenPopup(false)}>
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-orange-400" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
+                <span className="text-4xl">❌</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-3">Oops!</h3>
+              <p className="text-white text-lg mb-6">This name is already taken.</p>
+              <button
+                className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 py-3 font-bold text-lg transition-all shadow-lg hover:shadow-xl mb-3"
+                onClick={() => setShowTakenPopup(false)}
+              >
+                Try Another Name
+              </button>
+              <button
+                className="text-white text-base hover:text-gray-200 transition-all"
+                onClick={() => setShowTakenPopup(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup - Name is available */}
+      {showAvailablePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowAvailablePopup(false)}>
+          <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-orange-400" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
+                <svg xmlns='http://www.w3.org/2000/svg' className='h-10 w-10 text-green-500' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth={3}>
+                  <path strokeLinecap='round' strokeLinejoin='round' d='M5 13l4 4L19 7' />
+                </svg>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-3">Great!</h3>
+              <p className="text-white text-lg mb-6">This name is available for you.</p>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 py-3 font-bold text-lg transition-all shadow-lg hover:shadow-xl mb-3"
+                    onClick={async () => {
+                      setShowAvailablePopup(false);
+                      try {
+                        const { stringAsciiCV } = await import('@stacks/transactions');
+                        await openContractCall({
+                          contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                          contractName: GET_NAME_CONTRACT_NAME,
+                          functionName: 'register-username',
+                          functionArgs: [stringAsciiCV(inputName)],
+                          network: new StacksMainnet(),
+                          onFinish: (data: any) => {
+                            console.log('Transaction submitted:', data);
+                            setTxPopup({ show: true, txId: data.txId });
+                            setInputName('');
+                            // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
+                            setTimeout(() => {
+                              checkUserName();
+                            }, 3000);
+                          },
+                          onCancel: () => {
+                            console.log('Transaction cancelled');
+                          },
+                        });
+                      } catch (e) {
+                        console.error('Error registering username:', e);
+                      }
+                    }}
+                  >
+                    Register Now
+                  </button>
+                  <button
+                    className="text-white text-base hover:text-gray-200 transition-all"
+                    onClick={() => setShowAvailablePopup(false)}
+                  >
+                    Close
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="text-white text-base mb-4">Connect your wallet to register this name</div>
+                  <button
+                    className="text-white text-base hover:text-gray-200 transition-all"
+                    onClick={() => setShowAvailablePopup(false)}
+                  >
+                    Close
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
