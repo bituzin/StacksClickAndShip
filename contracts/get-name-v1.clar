@@ -1,4 +1,4 @@
-;; Username Registry Smart Contract
+;; Username Registry Smart Contract - Simplified
 ;; Simple username registration system on Stacks
 
 ;; Constants
@@ -6,19 +6,14 @@
 (define-constant ERR_USERNAME_TOO_SHORT (err u102))
 (define-constant ERR_USERNAME_TOO_LONG (err u103))
 (define-constant ERR_ALREADY_HAS_USERNAME (err u109))
-(define-constant ERR_UNAUTHORIZED (err u100))
 (define-constant ERR_NOT_OWNER (err u107))
 (define-constant ERR_USERNAME_NOT_FOUND (err u106))
-(define-constant ERR_CANNOT_TRANSFER_TO_SELF (err u110))
 
 (define-constant MIN_USERNAME_LENGTH u3)
 (define-constant MAX_USERNAME_LENGTH u30)
 
 ;; Data Variables
-(define-data-var registration-fee uint u100000)
-(define-data-var total-fees-collected uint u0)
 (define-data-var total-usernames uint u0)
-(define-data-var contract-owner (optional principal) none)
 
 ;; Data Maps
 (define-map usernames
@@ -34,7 +29,7 @@
     { username: (string-ascii 30) }
 )
 
-;; Read-Only Functions (order changed)
+;; Read-Only Functions
 (define-read-only (get-total-usernames)
     (var-get total-usernames)
 )
@@ -46,23 +41,11 @@
     )
 )
 
-(define-read-only (get-contract-owner)
-    (var-get contract-owner)
-)
-
 (define-read-only (get-address-username (owner principal))
     (match (map-get? address-to-username { owner: owner })
         entry (some (get username entry))
         none
     )
-)
-
-(define-read-only (get-registration-fee)
-    (var-get registration-fee)
-)
-
-(define-read-only (get-total-fees-collected)
-    (var-get total-fees-collected)
 )
 
 (define-read-only (is-username-available (username (string-ascii 30)))
@@ -81,40 +64,12 @@
     )
 )
 
-;; Clarity 4: Format registration fee as ASCII string
-(define-read-only (get-registration-fee-as-string)
-    (to-ascii? (var-get registration-fee))
-)
-
 ;; Clarity 4: Format principal as ASCII string using to-ascii?
 (define-read-only (get-owner-as-string (owner principal))
     (to-ascii? owner)
 )
 
-
-;; Public Functions (order changed)
-(define-public (release-username (username (string-ascii 30)))
-    (let
-        (
-            (caller tx-sender)
-            (username-entry (unwrap! (map-get? usernames { username: username }) ERR_USERNAME_NOT_FOUND))
-        )
-        ;; Check caller is the owner
-        (asserts! (is-eq caller (get owner username-entry)) ERR_NOT_OWNER)
-        
-        ;; Delete username
-        (map-delete usernames { username: username })
-        
-        ;; Delete reverse lookup
-        (map-delete address-to-username { owner: caller })
-        
-        ;; Update stats
-        (var-set total-usernames (- (var-get total-usernames) u1))
-        
-        (ok true)
-    )
-)
-
+;; Public Functions
 (define-public (register-username (username (string-ascii 30)))
     (let
         (
@@ -150,50 +105,24 @@
     )
 )
 
-(define-public (transfer-username (username (string-ascii 30)) (new-owner principal))
+(define-public (release-username (username (string-ascii 30)))
     (let
         (
             (caller tx-sender)
             (username-entry (unwrap! (map-get? usernames { username: username }) ERR_USERNAME_NOT_FOUND))
-            (current-owner (get owner username-entry))
-            (registered-at-time (get registered-at username-entry))
         )
         ;; Check caller is the owner
-        (asserts! (is-eq caller current-owner) ERR_NOT_OWNER)
+        (asserts! (is-eq caller (get owner username-entry)) ERR_NOT_OWNER)
         
-        ;; Cannot transfer to self
-        (asserts! (not (is-eq caller new-owner)) ERR_CANNOT_TRANSFER_TO_SELF)
+        ;; Delete username
+        (map-delete usernames { username: username })
         
-        ;; Check new owner doesn't already have a username
-        (asserts! (not (has-username new-owner)) ERR_ALREADY_HAS_USERNAME)
-        
-        ;; Update username ownership (preserve registration timestamp)
-        (map-set usernames
-            { username: username }
-            { 
-                owner: new-owner,
-                registered-at: registered-at-time
-            }
-        )
-        
-        ;; Update reverse lookups
+        ;; Delete reverse lookup
         (map-delete address-to-username { owner: caller })
-        (map-set address-to-username
-            { owner: new-owner }
-            { username: username }
-        )
+        
+        ;; Update stats
+        (var-set total-usernames (- (var-get total-usernames) u1))
         
         (ok true)
-    )
-)
-
-;; Initialize contract owner (can only be called once)
-(define-public (set-contract-owner (owner principal))
-    (if (is-none (var-get contract-owner))
-        (begin
-            (var-set contract-owner (some owner))
-            (ok owner)
-        )
-        ERR_UNAUTHORIZED
     )
 )

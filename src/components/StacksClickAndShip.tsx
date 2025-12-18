@@ -43,6 +43,10 @@ export default function StacksClickAndShip({
   const POST_MESSAGE_CONTRACT_NAME = 'postMessage-cl4';
   const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
   const GMOK_CONTRACT_NAME = 'gm-unlimited';
+  
+  // Adres i nazwa kontraktu get-name-v1
+  const GET_NAME_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
+  const GET_NAME_CONTRACT_NAME = 'get-name-v1';
 
   // State for GM counts
   const [todayGm, setTodayGm] = React.useState<number | null>(null);
@@ -60,6 +64,9 @@ export default function StacksClickAndShip({
   const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
   const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
   const [leaderboard, setLeaderboard] = React.useState<Array<{user: string, total: number}>>([]);
+  // Stan dla wpisanej nazwy i wyniku sprawdzenia
+  const [inputName, setInputName] = React.useState('');
+  const [isAvailable, setIsAvailable] = React.useState<null | boolean>(null);
   // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
     try {
@@ -967,6 +974,8 @@ export default function StacksClickAndShip({
                 <div className="flex items-center">
                   <input
                     type="text"
+                    value={inputName}
+                    onChange={e => setInputName(e.target.value)}
                     placeholder="Enter your name..."
                     className="flex-1 rounded-l-lg px-4 py-2 bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 text-base h-12"
                     style={{ minWidth: 0 }}
@@ -974,13 +983,72 @@ export default function StacksClickAndShip({
                   <span className="bg-transparent border-none text-orange-400 px-3 h-12 flex items-center font-mono text-base font-bold select-none">.stacks</span>
                 </div>
                 <div style={{ height: '1rem' }} />
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-3">
                   <button
                     className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
                     style={{ whiteSpace: 'nowrap' }}
+                    onClick={async () => {
+                      setIsAvailable(null);
+                      if (!inputName) return;
+                      try {
+                        const { stringAsciiCV } = await import('@stacks/transactions');
+                        const res = await callReadOnlyFunction({
+                          contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                          contractName: GET_NAME_CONTRACT_NAME,
+                          functionName: 'is-username-available',
+                          functionArgs: [stringAsciiCV(inputName)],
+                          network: new StacksMainnet(),
+                          senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+                        });
+                        setIsAvailable((res as any).value?.type === 3);
+                      } catch (e) {
+                        console.error('Error checking availability:', e);
+                        setIsAvailable(null);
+                      }
+                    }}
                   >
                     Check
                   </button>
+                  {isAvailable !== null && (
+                    <div className="flex flex-col items-center gap-3 w-full">
+                      <div className="text-center text-lg font-semibold" style={{ color: isAvailable ? '#f59e42' : '#e53e3e' }}>
+                        {isAvailable ? '✓ Nazwa dostępna!' : '✗ Nazwa zajęta.'}
+                      </div>
+                      {isAvailable && isAuthenticated && (
+                        <button
+                          className="rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                          onClick={async () => {
+                            try {
+                              const { stringAsciiCV } = await import('@stacks/transactions');
+                              await openContractCall({
+                                contractAddress: GET_NAME_CONTRACT_ADDRESS,
+                                contractName: GET_NAME_CONTRACT_NAME,
+                                functionName: 'register-username',
+                                functionArgs: [stringAsciiCV(inputName)],
+                                network: new StacksMainnet(),
+                                onFinish: (data: any) => {
+                                  console.log('Transaction submitted:', data);
+                                  setTxPopup({ show: true, txId: data.txId });
+                                  setIsAvailable(null);
+                                  setInputName('');
+                                },
+                                onCancel: () => {
+                                  console.log('Transaction cancelled');
+                                },
+                              });
+                            } catch (e) {
+                              console.error('Error registering username:', e);
+                            }
+                          }}
+                        >
+                          Register {inputName}.stacks
+                        </button>
+                      )}
+                      {isAvailable && !isAuthenticated && (
+                        <div className="text-orange-400 text-sm">Połącz portfel, aby zarejestrować nazwę</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
