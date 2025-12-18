@@ -971,13 +971,12 @@ export default function StacksClickAndShip({
                     className="flex-1 rounded-l-lg px-4 py-2 bg-purple-900/50 border border-purple-500/30 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 text-base h-12"
                     style={{ minWidth: 0 }}
                   />
+                  <span className="bg-transparent border-none text-orange-400 px-3 h-12 flex items-center font-mono text-base font-bold select-none">.stacks</span>
                 </div>
-                <span className="text-orange-400 text-base font-semibold mt-3 mb-3 text-center select-none">What will your name be?</span>
-                <div className="flex items-center">
-                  <span className="bg-transparent border-none text-purple-200 px-3 h-12 flex items-center font-mono text-base select-none">.stacks</span>
-                  <span className="flex-1"></span>
+                <div style={{ height: '1rem' }} />
+                <div className="flex justify-center">
                   <button
-                    className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl ml-4"
+                    className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
                     style={{ whiteSpace: 'nowrap' }}
                   >
                     Check
