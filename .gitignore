@@ -35,3 +35,4 @@ deployments/
 
 # Clarinet build artifacts
 clarinet/target/
+clarinet/
