@@ -1,7 +1,7 @@
 [project]
 name = "stacks-click-and-ship"
 
-[contracts.username-test-v2]
-path = "contracts/username-test-v2.clar"
+[contracts.get-name-test-v3]
+path = "contracts/get-name-test-v3.clar"
 clarity = 4
 epoch = "3.3"

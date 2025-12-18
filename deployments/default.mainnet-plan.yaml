@@ -9,10 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: username-test-v2
+            contract-name: get-name-test-v3
             expected-sender: SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86
-            cost: 68430
-            path: "contracts\\username-test-v2.clar"
+            cost: 58080
+            path: "contracts\\get-name-test-v3.clar"
             anchor-block-only: true
             clarity-version: 4
       epoch: "3.3"
