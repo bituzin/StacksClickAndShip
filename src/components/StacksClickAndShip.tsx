@@ -1195,7 +1195,9 @@ export default function StacksClickAndShip({
           <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border-4 border-orange-400" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-lg mb-4">
-                <span className="text-4xl text-green-500">✓</span>
+                <svg xmlns='http://www.w3.org/2000/svg' className='h-10 w-10 text-green-500' fill='none' viewBox='0 0 24 24' stroke='currentColor' strokeWidth={3}>
+                  <path strokeLinecap='round' strokeLinejoin='round' d='M5 13l4 4L19 7' />
+                </svg>
               </div>
               <h3 className="text-3xl font-bold text-white mb-3">Great!</h3>
               <p className="text-white text-lg mb-6">This name is available for you.</p>
