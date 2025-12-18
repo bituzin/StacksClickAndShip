@@ -1000,7 +1000,13 @@ export default function StacksClickAndShip({
                           network: new StacksMainnet(),
                           senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
                         });
-                        setIsAvailable((res as any).value?.type === 3);
+                        console.log('Response from is-username-available:', res);
+                        console.log('Response type:', (res as any).type);
+                        // Odpowiedź jest bezpośrednio w res, a nie res.value
+                        // type 3 = true (dostępna), type 4 = false (zajęta)
+                        const available = (res as any).type === 3;
+                        console.log('Is available:', available);
+                        setIsAvailable(available);
                       } catch (e) {
                         console.error('Error checking availability:', e);
                         setIsAvailable(null);
