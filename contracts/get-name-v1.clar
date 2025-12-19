@@ -124,5 +124,3 @@
         (var-set total-usernames (- (var-get total-usernames) u1))
         
         (ok true)
-    )
-)
