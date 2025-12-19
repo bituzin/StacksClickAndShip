@@ -1,12 +1,64 @@
 import React, { useState } from 'react';
-import { Sun, MessageSquare, Upload, BookOpen, Home } from 'lucide-react';
+import { Sun, MessageSquare, Upload, BookOpen, Home, Plus, X, CheckSquare } from 'lucide-react';
 
 export default function StacksClickAndShip() {
   const [activeTab, setActiveTab] = useState('home');
+  const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
+  const [voteTitle, setVoteTitle] = useState('');
+  const [voteDescription, setVoteDescription] = useState('');
+  const [voteOptions, setVoteOptions] = useState(['', '']);
+  const [voteDuration, setVoteDuration] = useState('144');
+  const [votesPerUser, setVotesPerUser] = useState('1');
+  const [requiresSTX, setRequiresSTX] = useState(false);
+  const [minSTXAmount, setMinSTXAmount] = useState('0');
+
+  const addVoteOption = () => {
+    if (voteOptions.length < 10) {
+      setVoteOptions([...voteOptions, '']);
+    }
+  };
+
+  const removeVoteOption = (index) => {
+    if (voteOptions.length > 2) {
+      setVoteOptions(voteOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateVoteOption = (index, value) => {
+    const newOptions = [...voteOptions];
+    newOptions[index] = value;
+    setVoteOptions(newOptions);
+  };
+
+  const resetVoteForm = () => {
+    setVoteTitle('');
+    setVoteDescription('');
+    setVoteOptions(['', '']);
+    setVoteDuration('144');
+    setVotesPerUser('1');
+    setRequiresSTX(false);
+    setMinSTXAmount('0');
+  };
+
+  const handleCreateVote = () => {
+    // TODO: Implement contract call to create-poll
+    console.log('Creating vote:', {
+      title: voteTitle,
+      description: voteDescription,
+      options: voteOptions.filter(o => o.trim() !== ''),
+      duration: voteDuration,
+      votesPerUser,
+      requiresSTX,
+      minSTXAmount
+    });
+    setShowCreateVoteModal(false);
+    resetVoteForm();
+  };
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'gm', label: 'GM', icon: Sun },
+    { id: 'vote', label: 'Vote', icon: CheckSquare },
     { id: 'message', label: 'Send Message', icon: MessageSquare },
     { id: 'deploy', label: 'Deploy', icon: Upload },
     { id: 'learn', label: 'Learn', icon: BookOpen }
@@ -87,15 +139,256 @@ export default function StacksClickAndShip() {
                 </div>
               </div>
 
-              <div className="mt-8 text-center">
+              <div className="mt-8 text-center space-x-4">
                 <button className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                   Connect Wallet
+                </button>
+                <button 
+                  onClick={() => setShowCreateVoteModal(true)}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  🗳️ Create Vote
                 </button>
               </div>
             </div>
           </div>
         )}
 
+        {/* Create Vote Modal */}
+        {showCreateVoteModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl border-2 border-purple-500/50 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-purple-900/95 backdrop-blur-sm border-b border-purple-500/30 p-6 flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-white">🗳️ Create New Vote</h2>
+                <button 
+                  onClick={() => { setShowCreateVoteModal(false); resetVoteForm(); }}
+                  className="text-purple-300 hover:text-white transition-colors"
+                >
+                  <X size={28} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-5">
+                {/* Title */}
+                <div>
+                  <label className="block text-purple-300 mb-2 font-semibold">📝 Title (max 100 chars)</label>
+                  <input 
+                    type="text"
+                    maxLength={100}
+                    value={voteTitle}
+                    onChange={(e) => setVoteTitle(e.target.value)}
+                    placeholder="e.g., What should we build next?"
+                    className="w-full bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                  />
+                  <div className="text-purple-400 text-sm mt-1">{voteTitle.length}/100</div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-purple-300 mb-2 font-semibold">📄 Description (optional, max 500 chars)</label>
+                  <textarea 
+                    maxLength={500}
+                    value={voteDescription}
+                    onChange={(e) => setVoteDescription(e.target.value)}
+                    placeholder="Add more context about this vote..."
+                    className="w-full bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 h-24 resize-none"
+                  ></textarea>
+                  <div className="text-purple-400 text-sm mt-1">{voteDescription.length}/500</div>
+                </div>
+
+                {/* Options */}
+                <div>
+                  <label className="block text-purple-300 mb-3 font-semibold">✅ Options (min 2, max 10)</label>
+                  <div className="space-y-3">
+                    {voteOptions.map((option, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="flex-shrink-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {index + 1}
+                        </div>
+                        <input 
+                          type="text"
+                          maxLength={100}
+                          value={option}
+                          onChange={(e) => updateVoteOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          className="flex-1 bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-2 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                        />
+                        {voteOptions.length > 2 && (
+                          <button 
+                            onClick={() => removeVoteOption(index)}
+                            className="flex-shrink-0 w-8 h-8 bg-red-600/80 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {voteOptions.length < 10 && (
+                    <button 
+                      onClick={addVoteOption}
+                      className="mt-3 w-full bg-purple-800/40 hover:bg-purple-700/60 border border-purple-500/30 hover:border-purple-400 rounded-lg px-4 py-2 text-purple-300 hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                      <Plus size={20} />
+                      <span>Add Option ({voteOptions.length}/10)</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Settings Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Duration */}
+                  <div>
+                    <label className="block text-purple-300 mb-2 font-semibold">⏱️ Duration (blocks)</label>
+                    <input 
+                      type="number"
+                      min="10"
+                      value={voteDuration}
+                      onChange={(e) => setVoteDuration(e.target.value)}
+                      className="w-full bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                    />
+                    <div className="text-purple-400 text-xs mt-1">~{Math.floor(Number(voteDuration) / 144)} days</div>
+                  </div>
+
+                  {/* Votes per user */}
+                  <div>
+                    <label className="block text-purple-300 mb-2 font-semibold">🎯 Votes per user</label>
+                    <input 
+                      type="number"
+                      min="1"
+                      value={votesPerUser}
+                      onChange={(e) => setVotesPerUser(e.target.value)}
+                      className="w-full bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                    />
+                  </div>
+                </div>
+
+                {/* STX Requirement */}
+                <div className="bg-purple-950/30 rounded-lg p-4 border border-purple-500/20">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={requiresSTX}
+                      onChange={(e) => setRequiresSTX(e.target.checked)}
+                      className="w-5 h-5 rounded border-purple-500/30 text-purple-600 focus:ring-purple-400"
+                    />
+                    <span className="text-purple-300 font-semibold">💰 Require minimum STX balance to vote</span>
+                  </label>
+                  
+                  {requiresSTX && (
+                    <div className="mt-3">
+                      <input 
+                        type="number"
+                        min="0"
+                        step="0.000001"
+                        value={minSTXAmount}
+                        onChange={(e) => setMinSTXAmount(e.target.value)}
+                        placeholder="0.000000"
+                        className="w-full bg-purple-950/50 border border-purple-500/30 rounded-lg px-4 py-2 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                      />
+                      <div className="text-purple-400 text-xs mt-1">Minimum STX balance required</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-purple-900/95 backdrop-blur-sm border-t border-purple-500/30 p-6 flex gap-3">
+                <button 
+                  onClick={() => { setShowCreateVoteModal(false); resetVoteForm(); }}
+                  className="flex-1 bg-purple-800/50 hover:bg-purple-700/70 text-purple-200 hover:text-white font-bold py-3 rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleCreateVote}
+                  disabled={!voteTitle.trim() || voteOptions.filter(o => o.trim()).length < 2}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:shadow-none"
+                >
+                  🗳️ Create Vote
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+vote' && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold text-white mb-4">🗳️ Decentralized Voting</h2>
+                <p className="text-purple-200 text-lg mb-6">
+                  Create and participate in on-chain votes. All results are transparent and immutable.
+                </p>
+                <button 
+                  onClick={() => setShowCreateVoteModal(true)}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-10 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-lg"
+                >
+                  🗳️ Create New Vote
+                </button>
+              </div>
+
+              <div className="mt-10">
+                <h3 className="text-2xl font-bold text-white mb-4">📊 Active Votes</h3>
+                <div className="space-y-4">
+                  {[
+                    { 
+                      title: 'What should we build next?', 
+                      creator: 'alice.stx', 
+                      votes: 142, 
+                      ends: '2 days', 
+                      options: ['NFT Marketplace', 'DAO Tools', 'DeFi Protocol'] 
+                    },
+                    { 
+                      title: 'Approve community grant proposal', 
+                      creator: 'bob.btc', 
+                      votes: 89, 
+                      ends: '5 days', 
+                      options: ['Yes', 'No', 'Abstain'] 
+                    },
+                  ].map((vote, idx) => (
+                    <div key={idx} className="bg-purple-900/40 rounded-xl p-6 border border-purple-500/20 hover:border-purple-400/50 transition-all">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-xl font-bold text-white mb-2">{vote.title}</h4>
+                          <p className="text-purple-300 text-sm">Created by {vote.creator}</p>
+                        </div>
+                        <div className="bg-purple-700/50 px-4 py-2 rounded-lg">
+                          <p className="text-orange-400 font-bold text-sm">Ends in {vote.ends}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        {vote.options.map((option, optIdx) => (
+                          <button 
+                            key={optIdx}
+                            className="w-full bg-purple-950/50 hover:bg-purple-800/50 border border-purple-500/30 hover:border-purple-400 rounded-lg px-4 py-3 text-left text-white transition-all"
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-400">💬 {vote.votes} votes</span>
+                        <button className="text-purple-400 hover:text-white transition-colors">View Details →</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Empty state if no votes */}
+                <div className="mt-8 text-center text-purple-400 text-sm">
+                  <p>No active votes found. Create one to get started!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === '
         {activeTab === 'gm' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
