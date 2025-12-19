@@ -82,6 +82,9 @@ export default function StacksClickAndShip({
   const [votesPerUser, setVotesPerUser] = React.useState(1);
   const [requiresSTX, setRequiresSTX] = React.useState(false);
   const [minSTXAmount, setMinSTXAmount] = React.useState(0);
+  const [activePolls, setActivePolls] = React.useState<any[]>([]);
+  const [closedPolls, setClosedPolls] = React.useState<any[]>([]);
+  const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
 
   // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
@@ -510,11 +513,132 @@ export default function StacksClickAndShip({
     }
   }, [userAddress, isAuthenticated]);
 
+  const fetchPolls = React.useCallback(async () => {
+    try {
+      setIsLoadingPolls(true);
+      console.log('🔍 Rozpoczynam pobieranie głosowań...');
+      const { uintCV } = await import('@stacks/transactions');
+      
+      // Pobierz statystyki globalne, aby wiedzieć ile głosowań jest
+      const statsRes = await callReadOnlyFunction({
+        contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+        contractName: 'votingv1',
+        functionName: 'get-global-stats',
+        functionArgs: [],
+        network: new StacksMainnet(),
+        senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+      });
+      
+      console.log('📊 Raw stats response:', statsRes);
+      console.log('📊 Stats value:', (statsRes as any).value);
+      console.log('📊 Stats data:', (statsRes as any).value?.data);
+      
+      const stats = (statsRes as any).value?.data;
+      
+      // Parsowanie totalPolls - różne możliwe formaty
+      let totalPolls = 0;
+      if (stats?.['total-polls']) {
+        const pollsValue = stats['total-polls'].value;
+        if (typeof pollsValue === 'bigint') {
+          totalPolls = Number(pollsValue);
+        } else if (typeof pollsValue === 'string') {
+          totalPolls = Number(pollsValue.replace(/n$/, ''));
+        } else if (typeof pollsValue === 'number') {
+          totalPolls = pollsValue;
+        }
+      }
+      
+      console.log('✅ Total polls:', totalPolls);
+      
+      if (totalPolls === 0) {
+        console.log('⚠️ Brak głosowań w kontrakcie');
+        setActivePolls([]);
+        setClosedPolls([]);
+        setIsLoadingPolls(false);
+        return;
+      }
+      
+      // Pobierz wszystkie głosowania (od 1 do totalPolls)
+      console.log(`🔄 Pobieranie ${totalPolls} głosowań...`);
+      const pollPromises = [];
+      for (let i = 1; i <= totalPolls; i++) {
+        pollPromises.push(
+          callReadOnlyFunction({
+            contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+            contractName: 'votingv1',
+            functionName: 'get-poll-full-details',
+            functionArgs: [uintCV(i)],
+            network: new StacksMainnet(),
+            senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+          }).catch(err => {
+            console.error(`❌ Błąd pobierania głosowania #${i}:`, err);
+            return null;
+          })
+        );
+      }
+      
+      const pollResults = await Promise.all(pollPromises);
+      console.log('📦 Poll results:', pollResults);
+      
+      const active = [];
+      const closed = [];
+      
+      for (let i = 0; i < pollResults.length; i++) {
+        const res = pollResults[i];
+        if (!res) continue;
+        
+        console.log(`🔍 Processing poll #${i + 1}:`, res);
+        const pollData = (res as any).value?.data;
+        console.log(`📝 Poll #${i + 1} data:`, pollData);
+        
+        if (pollData) {
+          // Parsowanie status
+          let status = 0;
+          if (pollData.status) {
+            const statusValue = pollData.status.value;
+            if (typeof statusValue === 'bigint') {
+              status = Number(statusValue);
+            } else if (typeof statusValue === 'string') {
+              status = Number(statusValue.replace(/n$/, ''));
+            } else if (typeof statusValue === 'number') {
+              status = statusValue;
+            }
+          }
+          
+          // Parsowanie is-active
+          let isActive = false;
+          if (pollData['is-active']) {
+            isActive = pollData['is-active'].value === true;
+          }
+          
+          console.log(`📊 Poll #${i + 1} - status: ${status}, isActive: ${isActive}`);
+          
+          if (isActive || status === 1) {
+            console.log(`✅ Poll #${i + 1} jest AKTYWNE`);
+            active.push(pollData);
+          } else {
+            console.log(`⏸️ Poll #${i + 1} jest ZAKOŃCZONE`);
+            closed.push(pollData);
+          }
+        }
+      }
+      
+      console.log(`✅ Znaleziono ${active.length} aktywnych i ${closed.length} zakończonych głosowań`);
+      setActivePolls(active);
+      setClosedPolls(closed);
+    } catch (e) {
+      console.error('❌ Błąd pobierania głosowań:', e);
+    } finally {
+      setIsLoadingPolls(false);
+    }
+  }, [userAddress]);
+
   React.useEffect(() => {
     fetchGmCounts();
     fetchLastGmAndLeaderboard();
     fetchMessageCounts();
-  }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts]);
+    fetchPolls();
+  }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -577,35 +701,35 @@ export default function StacksClickAndShip({
 
   const handleCreateVote = async () => {
     if (!voteTitle.trim()) {
-      alert('Please enter a vote title');
+      alert('Podaj tytuł głosowania');
       return;
     }
 
     const filledOptions = voteOptions.filter(opt => opt.trim() !== '');
     if (filledOptions.length < 2) {
-      alert('Please provide at least 2 options');
+      alert('Podaj co najmniej 2 opcje');
       return;
     }
 
     try {
-      const { stringUtf8CV, uintCV, someCV, noneCV } = await import('@stacks/transactions');
-      
-      const optionCVs = [];
-      for (let i = 0; i < 10; i++) {
-        if (i < filledOptions.length) {
-          optionCVs.push(someCV(stringUtf8CV(filledOptions[i])));
-        } else {
-          optionCVs.push(noneCV());
-        }
-      }
+      const { stringUtf8CV, uintCV, someCV, noneCV, boolCV } = await import('@stacks/transactions');
+
+      // option-0: wymagany string, option-1..9: optional
+      const optionArgs = [
+        stringUtf8CV(filledOptions[0] || ''),
+        ...Array.from({length: 9}, (_, i) =>
+          filledOptions[i+1] ? someCV(stringUtf8CV(filledOptions[i+1])) : noneCV()
+        )
+      ];
 
       const functionArgs = [
         stringUtf8CV(voteTitle),
         stringUtf8CV(voteDescription),
-        ...optionCVs,
+        ...optionArgs,
         uintCV(voteDuration),
         uintCV(votesPerUser),
-        requiresSTX ? someCV(uintCV(minSTXAmount * 1000000)) : noneCV()
+        boolCV(requiresSTX),
+        uintCV(minSTXAmount * 1000000)
       ];
 
       await openContractCall({
@@ -618,14 +742,16 @@ export default function StacksClickAndShip({
           console.log('Vote created:', data);
           setTxPopup({ show: true, txId: data.txId });
           resetVoteForm();
+          // Odśwież listę głosowań po 5 sekundach
+          setTimeout(() => fetchPolls(), 5000);
         },
         onCancel: () => {
           console.log('Vote creation cancelled');
         },
       });
     } catch (e) {
-      console.error('Error creating vote:', e);
-      alert('Error creating vote: ' + e.message);
+      console.error('Błąd przy tworzeniu głosowania:', e);
+      alert('Błąd przy tworzeniu głosowania: ' + e.message);
     }
   };
 
@@ -1115,6 +1241,143 @@ export default function StacksClickAndShip({
               >
                 Create Vote
               </button>
+
+              {/* Loader podczas ładowania głosowań */}
+              {isLoadingPolls && (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400"></div>
+                  <div className="text-orange-400 text-lg">Loading polls...</div>
+                </div>
+              )}
+
+              {/* Aktywne głosowania */}
+              {!isLoadingPolls && activePolls.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+                    <CheckSquare className="mr-2 text-green-400" size={24} />
+                    Active polls ({activePolls.length})
+                  </h3>
+                  <div className="space-y-4">
+                    {activePolls.map((poll) => {
+                      const pollIdRaw = poll['poll-id']?.value;
+                      const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
+                      const title = poll.title?.value || poll.title?.data || 'No title';
+                      const description = poll.description?.value || poll.description?.data || '';
+                      const totalVotesRaw = poll['total-votes']?.value || 0;
+                      const totalVotes = typeof totalVotesRaw === 'bigint' ? Number(totalVotesRaw) : totalVotesRaw;
+                      const totalVotersRaw = poll['total-voters']?.value || 0;
+                      const totalVoters = typeof totalVotersRaw === 'bigint' ? Number(totalVotersRaw) : totalVotersRaw;
+                      const blocksRemainingRaw = poll['blocks-remaining']?.value || 0;
+                      const blocksRemaining = typeof blocksRemainingRaw === 'bigint' ? Number(blocksRemainingRaw) : blocksRemainingRaw;
+                      const hoursRemaining = Math.floor(blocksRemaining / 6);
+                      
+                      return (
+                        <div key={pollId} className="bg-orange-900/40 rounded-lg p-6 border border-orange-500/30 hover:border-orange-500/50 transition-all">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h4 className="text-xl font-bold text-white mb-2">{title}</h4>
+                              {description && (
+                                <p className="text-orange-200 text-sm mb-3">{description}</p>
+                              )}
+                            </div>
+                            <span className="ml-4 px-3 py-1 rounded-full bg-green-600/30 text-green-300 text-xs font-bold border border-green-500/50">
+                              ACTIVE
+                            </span>
+                          </div>
+                          
+                          <div className="flex gap-6 text-sm text-orange-300">
+                            <div>
+                              <span className="font-bold">{totalVotes}</span> votes
+                            </div>
+                            <div>
+                              <span className="font-bold">{totalVoters}</span> voters
+                            </div>
+                            <div>
+                              Ends in <span className="font-bold">{hoursRemaining}h</span> ({blocksRemaining} blocks)
+                            </div>
+                          </div>
+                          
+                          <button
+                            className="mt-4 w-full py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold transition-all"
+                            onClick={() => {
+                              // TODO: Add poll details modal and voting
+                              alert('Poll details #' + pollId);
+                            }}
+                          >
+                            View details & vote
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Zakończone głosowania */}
+              {!isLoadingPolls && closedPolls.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+                    <X className="mr-2 text-gray-400" size={24} />
+                    Closed polls ({closedPolls.length})
+                  </h3>
+                  <div className="space-y-4">
+                    {closedPolls.map((poll) => {
+                      const pollIdRaw = poll['poll-id']?.value;
+                      const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
+                      const title = poll.title?.value || poll.title?.data || 'No title';
+                      const description = poll.description?.value || poll.description?.data || '';
+                      const totalVotesRaw = poll['total-votes']?.value || 0;
+                      const totalVotes = typeof totalVotesRaw === 'bigint' ? Number(totalVotesRaw) : totalVotesRaw;
+                      const totalVotersRaw = poll['total-voters']?.value || 0;
+                      const totalVoters = typeof totalVotersRaw === 'bigint' ? Number(totalVotersRaw) : totalVotersRaw;
+                      
+                      return (
+                        <div key={pollId} className="bg-gray-800/40 rounded-lg p-6 border border-gray-600/30 hover:border-gray-600/50 transition-all opacity-75">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h4 className="text-xl font-bold text-gray-300 mb-2">{title}</h4>
+                              {description && (
+                                <p className="text-gray-400 text-sm mb-3">{description}</p>
+                              )}
+                            </div>
+                            <span className="ml-4 px-3 py-1 rounded-full bg-gray-600/30 text-gray-400 text-xs font-bold border border-gray-500/50">
+                              CLOSED
+                            </span>
+                          </div>
+                          
+                          <div className="flex gap-6 text-sm text-gray-400">
+                            <div>
+                              <span className="font-bold">{totalVotes}</span> votes
+                            </div>
+                            <div>
+                              <span className="font-bold">{totalVoters}</span> voters
+                            </div>
+                          </div>
+                          
+                          <button
+                            className="mt-4 w-full py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all"
+                            onClick={() => {
+                              // TODO: Add poll results modal
+                              alert('Poll results #' + pollId);
+                            }}
+                          >
+                            View results
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Brak głosowań */}
+              {!isLoadingPolls && activePolls.length === 0 && closedPolls.length === 0 && (
+                <div className="mt-8 text-center py-12">
+                  <CheckSquare className="mx-auto mb-4 text-orange-400/50" size={64} />
+                  <p className="text-orange-300 text-lg">No polls yet.</p>
+                  <p className="text-orange-400/70 text-sm mt-2">Click "Create Vote" to create the first poll!</p>
+                </div>
+              )}
 
               {showCreateVoteModal && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

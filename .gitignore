@@ -37,3 +37,6 @@ deployments/
 clarinet/target/
 clarinet/
 Clarinet.toml
+
+# Other projects
+stacksdao/
