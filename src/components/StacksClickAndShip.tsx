@@ -1014,6 +1014,12 @@ export default function StacksClickAndShip({
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Vote</h2>
               <p className="text-orange-300 mb-6">Create and participate in on-chain polls.</p>
+              <button
+                className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl mb-4"
+                onClick={() => { /* Tu dodaj logikę otwierania kreatora głosowania */ }}
+              >
+                Create Vote
+              </button>
               {/* Tu pojawi się kreator głosowania */}
             </div>
           </div>
