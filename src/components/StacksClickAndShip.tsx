@@ -675,14 +675,14 @@ export default function StacksClickAndShip({
     }
   };
 
-  const removeVoteOption = (index) => {
+  const removeVoteOption = (index: number) => {
     if (voteOptions.length > 2) {
       const newOptions = voteOptions.filter((_, i) => i !== index);
       setVoteOptions(newOptions);
     }
   };
 
-  const updateVoteOption = (index, value) => {
+  const updateVoteOption = (index: number, value: string) => {
     const newOptions = [...voteOptions];
     newOptions[index] = value;
     setVoteOptions(newOptions);
@@ -751,7 +751,7 @@ export default function StacksClickAndShip({
       });
     } catch (e) {
       console.error('Błąd przy tworzeniu głosowania:', e);
-      alert('Błąd przy tworzeniu głosowania: ' + e.message);
+      alert('Błąd przy tworzeniu głosowania: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 
