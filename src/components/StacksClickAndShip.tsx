@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X, User } from 'lucide-react';
 import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, cvToString, principalCV } from '@stacks/transactions';
@@ -78,13 +78,16 @@ export default function StacksClickAndShip({
   const [voteTitle, setVoteTitle] = React.useState('');
   const [voteDescription, setVoteDescription] = React.useState('');
   const [voteOptions, setVoteOptions] = React.useState(['', '']);
-  const [voteDuration, setVoteDuration] = React.useState(144);
+  const [voteDuration, setVoteDuration] = React.useState(60); // Czas w minutach
   const [votesPerUser, setVotesPerUser] = React.useState(1);
   const [requiresSTX, setRequiresSTX] = React.useState(false);
   const [minSTXAmount, setMinSTXAmount] = React.useState(0);
   const [activePolls, setActivePolls] = React.useState<any[]>([]);
   const [closedPolls, setClosedPolls] = React.useState<any[]>([]);
   const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
+  const [selectedPoll, setSelectedPoll] = React.useState<any | null>(null);
+  const [showVoteModal, setShowVoteModal] = React.useState(false);
+  const [currentBlockHeight, setCurrentBlockHeight] = React.useState<number>(0);
 
   // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
@@ -210,7 +213,8 @@ export default function StacksClickAndShip({
     try {
       const res = await fetch('https://api.mainnet.hiro.so/v2/info');
       const data = await res.json();
-      return data.burn_block_height;
+      console.log('📍 Block heights - burn:', data.burn_block_height, 'stacks:', data.stacks_tip_height);
+      return data.burn_block_height; // MUSI być burn_block_height bo kontrakt używa tego!
     } catch {
       return 0;
     }
@@ -519,6 +523,11 @@ export default function StacksClickAndShip({
       console.log('🔍 Rozpoczynam pobieranie głosowań...');
       const { uintCV } = await import('@stacks/transactions');
       
+      // Pobierz aktualny block height
+      const currentBlock = await fetchCurrentBlock();
+      setCurrentBlockHeight(currentBlock);
+      console.log('📍 Current block height:', currentBlock);
+      
       // Pobierz statystyki globalne, aby wiedzieć ile głosowań jest
       const statsRes = await callReadOnlyFunction({
         contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
@@ -592,28 +601,30 @@ export default function StacksClickAndShip({
         console.log(`📝 Poll #${i + 1} data:`, pollData);
         
         if (pollData) {
-          // Parsowanie status
-          let status = 0;
-          if (pollData.status) {
-            const statusValue = pollData.status.value;
-            if (typeof statusValue === 'bigint') {
-              status = Number(statusValue);
-            } else if (typeof statusValue === 'string') {
-              status = Number(statusValue.replace(/n$/, ''));
-            } else if (typeof statusValue === 'number') {
-              status = statusValue;
+          // Parsowanie end-block-height
+          let endBlockHeight = 0;
+          if (pollData['end-block-height']) {
+            const endValue = pollData['end-block-height'].value;
+            if (typeof endValue === 'bigint') {
+              endBlockHeight = Number(endValue);
+            } else if (typeof endValue === 'string') {
+              endBlockHeight = Number(endValue.replace(/n$/, ''));
+            } else if (typeof endValue === 'number') {
+              endBlockHeight = endValue;
             }
           }
           
-          // Parsowanie is-active
-          let isActive = false;
-          if (pollData['is-active']) {
-            isActive = pollData['is-active'].value === true;
-          }
+          // Sprawdź czy głosowanie jest aktywne na podstawie block height
+          const isActive = currentBlock < endBlockHeight;
+          const blocksRemaining = Math.max(0, endBlockHeight - currentBlock);
           
-          console.log(`📊 Poll #${i + 1} - status: ${status}, isActive: ${isActive}`);
+          console.log(`📊 Poll #${i + 1} - endBlock: ${endBlockHeight}, current: ${currentBlock}, blocksRemaining: ${blocksRemaining}, isActive: ${isActive}`);
           
-          if (isActive || status === 1) {
+          // Dodaj informacje o blokach do poll data
+          pollData['blocks-remaining'] = { value: blocksRemaining };
+          pollData['is-active-calculated'] = { value: isActive };
+          
+          if (isActive) {
             console.log(`✅ Poll #${i + 1} jest AKTYWNE`);
             active.push(pollData);
           } else {
@@ -638,6 +649,13 @@ export default function StacksClickAndShip({
     fetchLastGmAndLeaderboard();
     fetchMessageCounts();
     fetchPolls();
+    
+    // Auto-refresh polls co minutę
+    const pollInterval = setInterval(() => {
+      fetchPolls();
+    }, 60000); // 60 sekund
+    
+    return () => clearInterval(pollInterval);
   }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls]);
 
   async function handleSayGM() {
@@ -692,7 +710,7 @@ export default function StacksClickAndShip({
     setVoteTitle('');
     setVoteDescription('');
     setVoteOptions(['', '']);
-    setVoteDuration(144);
+    setVoteDuration(60); // 60 minut domyślnie
     setVotesPerUser(1);
     setRequiresSTX(false);
     setMinSTXAmount(0);
@@ -722,11 +740,15 @@ export default function StacksClickAndShip({
         )
       ];
 
+      // Konwertuj minuty na bloki (1 blok Stacks = ~10 minut)
+      const durationInBlocks = Math.ceil(voteDuration / 10);
+      console.log(`⏱️ Creating poll: ${voteDuration} minutes = ${durationInBlocks} blocks`);
+      
       const functionArgs = [
         stringUtf8CV(voteTitle),
         stringUtf8CV(voteDescription),
         ...optionArgs,
-        uintCV(voteDuration),
+        uintCV(durationInBlocks),
         uintCV(votesPerUser),
         boolCV(requiresSTX),
         uintCV(minSTXAmount * 1000000)
@@ -796,7 +818,7 @@ export default function StacksClickAndShip({
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="text-orange-400 text-sm">
-                Połączono:
+                Connected:
                 {userAddress && (
                   <a
                     href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
@@ -1231,16 +1253,59 @@ export default function StacksClickAndShip({
         )}
 
         {activeTab === 'vote' && path.startsWith('/vote') && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-4">Vote</h2>
-              <p className="text-orange-300 mb-6">Create and participate in on-chain polls.</p>
-              <button
-                className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl mb-4"
-                onClick={() => setShowCreateVoteModal(true)}
-              >
-                Create Vote
-              </button>
+              {/* Header z przyciskiem */}
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Vote</h2>
+                  <p className="text-orange-300">Create and participate in on-chain polls.</p>
+                </div>
+                <button
+                  className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                  onClick={() => setShowCreateVoteModal(true)}
+                >
+                  Create New Vote
+                </button>
+              </div>
+
+              {/* User Statistics Panel */}
+              {isAuthenticated && userAddress && (
+                <div className="mb-8 bg-gradient-to-br from-orange-900/40 to-purple-900/40 rounded-xl p-6 border border-orange-500/30">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <User className="mr-2 text-orange-400" size={24} />
+                    Your Voting Activity
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                      <div className="text-orange-300 text-sm mb-1">Polls Created</div>
+                      <div className="text-3xl font-bold text-white">
+                        {(() => {
+                          const created = [...activePolls, ...closedPolls].filter(poll => {
+                            const creator = poll.creator?.value || poll.creator;
+                            return creator === userAddress;
+                          });
+                          return created.length;
+                        })()}
+                      </div>
+                    </div>
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                      <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
+                      <div className="text-3xl font-bold text-white">
+                        {/* TODO: Track voted polls */}
+                        0
+                      </div>
+                    </div>
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                      <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
+                      <div className="text-3xl font-bold text-white">
+                        {/* TODO: Track total votes */}
+                        0
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Loader podczas ładowania głosowań */}
               {isLoadingPolls && (
@@ -1250,15 +1315,25 @@ export default function StacksClickAndShip({
                 </div>
               )}
 
-              {/* Aktywne głosowania */}
-              {!isLoadingPolls && activePolls.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
-                    <CheckSquare className="mr-2 text-green-400" size={24} />
-                    Active polls ({activePolls.length})
-                  </h3>
-                  <div className="space-y-4">
-                    {activePolls.map((poll) => {
+              {/* Grid layout - 2 kolumny: Aktywne i Zakończone */}
+              {!isLoadingPolls && (activePolls.length > 0 || closedPolls.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                  
+                  {/* PANEL 1: Aktywne głosowania */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+                      <CheckSquare className="mr-2 text-green-400" size={24} />
+                      Active Polls ({activePolls.length})
+                    </h3>
+                    
+                    {activePolls.length === 0 ? (
+                      <div className="text-center py-12 bg-orange-900/20 rounded-lg border border-orange-500/20">
+                        <CheckSquare className="mx-auto mb-3 text-orange-400/50" size={48} />
+                        <p className="text-orange-300">No active polls</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {activePolls.map((poll) => {
                       const pollIdRaw = poll['poll-id']?.value;
                       const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
                       const title = poll.title?.value || poll.title?.data || 'No title';
@@ -1269,7 +1344,8 @@ export default function StacksClickAndShip({
                       const totalVoters = typeof totalVotersRaw === 'bigint' ? Number(totalVotersRaw) : totalVotersRaw;
                       const blocksRemainingRaw = poll['blocks-remaining']?.value || 0;
                       const blocksRemaining = typeof blocksRemainingRaw === 'bigint' ? Number(blocksRemainingRaw) : blocksRemainingRaw;
-                      const hoursRemaining = Math.floor(blocksRemaining / 6);
+                      const minutesRemaining = blocksRemaining * 10; // 1 blok = 10 minut
+                      const hoursRemaining = Math.floor(minutesRemaining / 60);
                       
                       return (
                         <div key={pollId} className="bg-orange-900/40 rounded-lg p-6 border border-orange-500/30 hover:border-orange-500/50 transition-all">
@@ -1300,8 +1376,8 @@ export default function StacksClickAndShip({
                           <button
                             className="mt-4 w-full py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold transition-all"
                             onClick={() => {
-                              // TODO: Add poll details modal and voting
-                              alert('Poll details #' + pollId);
+                              setSelectedPoll(poll);
+                              setShowVoteModal(true);
                             }}
                           >
                             View details & vote
@@ -1309,18 +1385,24 @@ export default function StacksClickAndShip({
                         </div>
                       );
                     })}
+                    </div>
+                  )}
                   </div>
-                </div>
-              )}
-
-              {/* Zakończone głosowania */}
-              {!isLoadingPolls && closedPolls.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
-                    <X className="mr-2 text-gray-400" size={24} />
-                    Closed polls ({closedPolls.length})
-                  </h3>
-                  <div className="space-y-4">
+                  
+                  {/* PANEL 2: Zakończone głosowania */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-4 flex items-center">
+                      <X className="mr-2 text-red-400" size={24} />
+                      Ended Polls ({closedPolls.length})
+                    </h3>
+                    
+                    {closedPolls.length === 0 ? (
+                      <div className="text-center py-12 bg-gray-800/20 rounded-lg border border-gray-600/20">
+                        <X className="mx-auto mb-3 text-gray-400/50" size={48} />
+                        <p className="text-gray-400">No ended polls</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
                     {closedPolls.map((poll) => {
                       const pollIdRaw = poll['poll-id']?.value;
                       const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
@@ -1340,8 +1422,8 @@ export default function StacksClickAndShip({
                                 <p className="text-gray-400 text-sm mb-3">{description}</p>
                               )}
                             </div>
-                            <span className="ml-4 px-3 py-1 rounded-full bg-gray-600/30 text-gray-400 text-xs font-bold border border-gray-500/50">
-                              CLOSED
+                            <span className="ml-4 px-3 py-1 rounded-full bg-red-600/30 text-red-300 text-xs font-bold border border-red-500/50">
+                              ENDED
                             </span>
                           </div>
                           
@@ -1357,8 +1439,8 @@ export default function StacksClickAndShip({
                           <button
                             className="mt-4 w-full py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all"
                             onClick={() => {
-                              // TODO: Add poll results modal
-                              alert('Poll results #' + pollId);
+                              setSelectedPoll(poll);
+                              setShowVoteModal(true);
                             }}
                           >
                             View results
@@ -1366,16 +1448,19 @@ export default function StacksClickAndShip({
                         </div>
                       );
                     })}
+                    </div>
+                  )}
                   </div>
+                  
                 </div>
               )}
 
-              {/* Brak głosowań */}
+              {/* Brak głosowań - pokazuj tylko gdy nie ma żadnych */}
               {!isLoadingPolls && activePolls.length === 0 && closedPolls.length === 0 && (
                 <div className="mt-8 text-center py-12">
                   <CheckSquare className="mx-auto mb-4 text-orange-400/50" size={64} />
                   <p className="text-orange-300 text-lg">No polls yet.</p>
-                  <p className="text-orange-400/70 text-sm mt-2">Click "Create Vote" to create the first poll!</p>
+                  <p className="text-orange-400/70 text-sm mt-2">Click "Create New Vote" to create the first poll!</p>
                 </div>
               )}
 
@@ -1455,15 +1540,24 @@ export default function StacksClickAndShip({
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-orange-200 mb-2 font-semibold">Duration (blocks)</label>
+                          <label className="block text-orange-200 mb-2 font-semibold">Duration (minutes)</label>
                           <input
-                            type="number"
+                            type="range"
                             min={10}
+                            max={10080}
+                            step={10}
                             value={voteDuration}
                             onChange={(e) => setVoteDuration(Number(e.target.value))}
-                            className="w-full px-4 py-2 rounded-lg bg-orange-900/50 border border-orange-500/30 text-white placeholder-orange-400 focus:outline-none focus:border-orange-400"
+                            className="w-full h-2 bg-orange-900/50 rounded-lg appearance-none cursor-pointer"
+                            style={{
+                              background: `linear-gradient(to right, #f97316 0%, #f97316 ${(voteDuration / 10080) * 100}%, rgba(255, 255, 255, 0.1) ${(voteDuration / 10080) * 100}%, rgba(255, 255, 255, 0.1) 100%)`
+                            }}
                           />
-                          <div className="text-xs text-orange-300/70 mt-1">~{Math.floor(voteDuration / 6)} hours</div>
+                          <div className="flex justify-between text-xs text-orange-300/70 mt-2">
+                            <span>{voteDuration} min</span>
+                            <span>{(voteDuration / 60).toFixed(1)}h</span>
+                            <span>{(voteDuration / 1440).toFixed(1)} days</span>
+                          </div>
                         </div>
 
                         <div>
@@ -1518,6 +1612,185 @@ export default function StacksClickAndShip({
                         </button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal do głosowania */}
+              {showVoteModal && selectedPoll && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                  <div className="bg-gradient-to-br from-orange-900/95 to-purple-900/95 backdrop-blur-xl rounded-2xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-orange-500/30 shadow-2xl">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-2xl font-bold text-white">
+                        {selectedPoll.title?.value || selectedPoll.title?.data || 'Poll Details'}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setShowVoteModal(false);
+                          setSelectedPoll(null);
+                        }}
+                        className="text-orange-300 hover:text-white transition-colors"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+
+                    {/* Description */}
+                    {(selectedPoll.description?.value || selectedPoll.description?.data) && (
+                      <p className="text-orange-200 mb-6">
+                        {selectedPoll.description?.value || selectedPoll.description?.data}
+                      </p>
+                    )}
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                        <div className="text-orange-300 text-sm mb-1">Total Votes</div>
+                        <div className="text-2xl font-bold text-white">
+                          {typeof selectedPoll['total-votes']?.value === 'bigint' 
+                            ? Number(selectedPoll['total-votes'].value) 
+                            : selectedPoll['total-votes']?.value || 0}
+                        </div>
+                      </div>
+                      <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                        <div className="text-orange-300 text-sm mb-1">Total Voters</div>
+                        <div className="text-2xl font-bold text-white">
+                          {typeof selectedPoll['total-voters']?.value === 'bigint' 
+                            ? Number(selectedPoll['total-voters'].value) 
+                            : selectedPoll['total-voters']?.value || 0}
+                        </div>
+                      </div>
+                      <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                        <div className="text-orange-300 text-sm mb-1">Status</div>
+                        <div className="text-lg font-bold">
+                          {selectedPoll['is-active-calculated']?.value ? (
+                            <span className="text-green-400">ACTIVE</span>
+                          ) : (
+                            <span className="text-red-400">ENDED</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Time remaining */}
+                    {selectedPoll['is-active-calculated']?.value && (
+                      <div className="mb-6 text-orange-300">
+                        ⏱️ Ends in <span className="font-bold text-white">
+                          {Math.floor(((selectedPoll['blocks-remaining']?.value || 0) * 10) / 60)}h {((selectedPoll['blocks-remaining']?.value || 0) * 10) % 60}min
+                        </span> ({selectedPoll['blocks-remaining']?.value || 0} blocks)
+                      </div>
+                    )}
+
+                    {/* Options to vote */}
+                    {selectedPoll['is-active-calculated']?.value && isAuthenticated ? (
+                      <div className="space-y-3 mb-6">
+                        <h4 className="text-lg font-bold text-white mb-3">Cast your vote:</h4>
+                        {selectedPoll.options?.value?.map((option: any, index: number) => {
+                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
+                          const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
+                          const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                          const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
+                            ? Number(selectedPoll['total-votes'].value) 
+                            : selectedPoll['total-votes']?.value || 0;
+                          const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={async () => {
+                                try {
+                                  const { uintCV } = await import('@stacks/transactions');
+                                  const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
+                                    ? Number(selectedPoll['poll-id'].value) 
+                                    : selectedPoll['poll-id']?.value;
+                                  
+                                  await openContractCall({
+                                    contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+                                    contractName: 'votingv1',
+                                    functionName: 'cast-vote',
+                                    functionArgs: [uintCV(pollId), uintCV(index)],
+                                    network: new StacksMainnet(),
+                                    onFinish: (data: any) => {
+                                      console.log('Vote submitted:', data);
+                                      setTxPopup({ show: true, txId: data.txId });
+                                      setShowVoteModal(false);
+                                      setSelectedPoll(null);
+                                      // Odśwież głosowania po 5 sekundach
+                                      setTimeout(() => fetchPolls(), 5000);
+                                    },
+                                    onCancel: () => {
+                                      console.log('Vote cancelled');
+                                    },
+                                  });
+                                } catch (e) {
+                                  console.error('Vote error:', e);
+                                  alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
+                                }
+                              }}
+                              className="w-full text-left p-4 rounded-lg bg-orange-900/50 hover:bg-orange-800/70 border border-orange-500/30 hover:border-orange-500/50 transition-all"
+                            >
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-white font-medium">{optionText}</span>
+                                <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
+                              </div>
+                              <div className="w-full bg-orange-900/30 rounded-full h-2">
+                                <div 
+                                  className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* Results for ended polls or not authenticated */
+                      <div className="space-y-3 mb-6">
+                        <h4 className="text-lg font-bold text-white mb-3">
+                          {selectedPoll['is-active-calculated']?.value ? 'Current Results:' : 'Final Results:'}
+                        </h4>
+                        {selectedPoll.options?.value?.map((option: any, index: number) => {
+                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
+                          const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
+                          const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                          const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
+                            ? Number(selectedPoll['total-votes'].value) 
+                            : selectedPoll['total-votes']?.value || 0;
+                          const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
+                          
+                          return (
+                            <div key={index} className="p-4 rounded-lg bg-gray-800/50 border border-gray-600/30">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-white font-medium">{optionText}</span>
+                                <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-900/30 rounded-full h-2">
+                                <div 
+                                  className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {!isAuthenticated && selectedPoll['is-active-calculated']?.value && (
+                      <div className="text-center text-orange-300 py-4">
+                        Connect your wallet to vote
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setShowVoteModal(false);
+                        setSelectedPoll(null);
+                      }}
+                      className="w-full py-3 rounded-lg bg-orange-700/50 hover:bg-orange-700 text-white font-bold transition-all"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               )}
