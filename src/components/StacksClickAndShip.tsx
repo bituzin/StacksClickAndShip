@@ -78,7 +78,7 @@ export default function StacksClickAndShip({
   const [voteTitle, setVoteTitle] = React.useState('');
   const [voteDescription, setVoteDescription] = React.useState('');
   const [voteOptions, setVoteOptions] = React.useState(['', '']);
-  const [voteDuration, setVoteDuration] = React.useState(60); // Czas w minutach
+  const [voteDuration, setVoteDuration] = React.useState(100); // Czas w minutach (min 10 bloków = 100 min)
   const [votesPerUser, setVotesPerUser] = React.useState(1);
   const [requiresSTX, setRequiresSTX] = React.useState(false);
   const [minSTXAmount, setMinSTXAmount] = React.useState(0);
@@ -601,10 +601,13 @@ export default function StacksClickAndShip({
         console.log(`📝 Poll #${i + 1} data:`, pollData);
         
         if (pollData) {
-          // Parsowanie end-block-height
+          // Log creator data for debugging
+          console.log(`👤 Poll #${i + 1} creator:`, pollData.creator);
+          
+          // Kontrakt zwraca 'ends-at', NIE 'end-block-height'!
           let endBlockHeight = 0;
-          if (pollData['end-block-height']) {
-            const endValue = pollData['end-block-height'].value;
+          if (pollData['ends-at']) {
+            const endValue = pollData['ends-at'].value;
             if (typeof endValue === 'bigint') {
               endBlockHeight = Number(endValue);
             } else if (typeof endValue === 'string') {
@@ -614,14 +617,28 @@ export default function StacksClickAndShip({
             }
           }
           
-          // Sprawdź czy głosowanie jest aktywne na podstawie block height
-          const isActive = currentBlock < endBlockHeight;
-          const blocksRemaining = Math.max(0, endBlockHeight - currentBlock);
+          // Kontrakt już zwraca is-active i blocks-remaining, użyjmy tego!
+          const isActiveFromContract = pollData['is-active']?.value || false;
+          const blocksRemainingFromContract = pollData['blocks-remaining']?.value || 0;
+          const blocksRemaining = typeof blocksRemainingFromContract === 'bigint' 
+            ? Number(blocksRemainingFromContract) 
+            : blocksRemainingFromContract;
           
-          console.log(`📊 Poll #${i + 1} - endBlock: ${endBlockHeight}, current: ${currentBlock}, blocksRemaining: ${blocksRemaining}, isActive: ${isActive}`);
+          // Ale też obliczmy sami dla weryfikacji
+          const isActiveCalculated = currentBlock < endBlockHeight;
+          const blocksRemainingCalculated = Math.max(0, endBlockHeight - currentBlock);
           
-          // Dodaj informacje o blokach do poll data
-          pollData['blocks-remaining'] = { value: blocksRemaining };
+          console.log(`📊 Poll #${i + 1}:`);
+          console.log(`  - ends-at: ${endBlockHeight}`);
+          console.log(`  - current block: ${currentBlock}`);
+          console.log(`  - Contract says: isActive=${isActiveFromContract}, blocksRemaining=${blocksRemaining}`);
+          console.log(`  - Calculated: isActive=${isActiveCalculated}, blocksRemaining=${blocksRemainingCalculated}`);
+          
+          // Użyj wartości z kontraktu (kontrakt wie najlepiej!)
+          const isActive = isActiveFromContract;
+          
+          // Ale nadpisz blocks-remaining naszą kalkulacją (bardziej aktualne)
+          pollData['blocks-remaining'] = { value: blocksRemainingCalculated };
           pollData['is-active-calculated'] = { value: isActive };
           
           if (isActive) {
@@ -710,7 +727,7 @@ export default function StacksClickAndShip({
     setVoteTitle('');
     setVoteDescription('');
     setVoteOptions(['', '']);
-    setVoteDuration(60); // 60 minut domyślnie
+    setVoteDuration(100); // 100 minut domyślnie (min 10 bloków)
     setVotesPerUser(1);
     setRequiresSTX(false);
     setMinSTXAmount(0);
@@ -742,7 +759,18 @@ export default function StacksClickAndShip({
 
       // Konwertuj minuty na bloki (1 blok Stacks = ~10 minut)
       const durationInBlocks = Math.ceil(voteDuration / 10);
-      console.log(`⏱️ Creating poll: ${voteDuration} minutes = ${durationInBlocks} blocks`);
+      console.log(`⏱️ Creating poll:`);
+      console.log(`  - Duration: ${voteDuration} minutes = ${durationInBlocks} blocks`);
+      console.log(`  - Title: "${voteTitle}"`);
+      console.log(`  - Options: ${filledOptions.length}`, filledOptions);
+      console.log(`  - Votes per user: ${votesPerUser}`);
+      console.log(`  - Requires STX: ${requiresSTX}`);
+      console.log(`  - Min STX: ${minSTXAmount}`);
+      
+      if (durationInBlocks < 10) {
+        alert(`Duration too short! Minimum is 10 blocks (100 minutes). You have ${durationInBlocks} blocks.`);
+        return;
+      }
       
       const functionArgs = [
         stringUtf8CV(voteTitle),
@@ -753,6 +781,8 @@ export default function StacksClickAndShip({
         boolCV(requiresSTX),
         uintCV(minSTXAmount * 1000000)
       ];
+      
+      console.log('📤 Sending to contract:', functionArgs);
 
       await openContractCall({
         contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
@@ -1281,10 +1311,34 @@ export default function StacksClickAndShip({
                       <div className="text-orange-300 text-sm mb-1">Polls Created</div>
                       <div className="text-3xl font-bold text-white">
                         {(() => {
+                          console.log('📊 Calculating user stats:');
+                          console.log('  - User address:', userAddress);
+                          console.log('  - Active polls:', activePolls.length);
+                          console.log('  - Closed polls:', closedPolls.length);
+                          
                           const created = [...activePolls, ...closedPolls].filter(poll => {
-                            const creator = poll.creator?.value || poll.creator;
-                            return creator === userAddress;
+                            // creator jest principal w Clarity - może być w różnych formatach
+                            let creatorAddress = '';
+                            
+                            if (poll.creator?.value) {
+                              // Jeśli ma .value, to jest ClarityValue
+                              creatorAddress = poll.creator.value;
+                            } else if (typeof poll.creator === 'string') {
+                              // Już jest string
+                              creatorAddress = poll.creator;
+                            } else if (poll.creator?.data) {
+                              // Może być w .data
+                              creatorAddress = poll.creator.data;
+                            }
+                            
+                            console.log(`  - Poll creator: "${creatorAddress}" vs user: "${userAddress}"`);
+                            console.log(`  - Poll creator object:`, poll.creator);
+                            console.log(`  - Match:`, creatorAddress === userAddress);
+                            
+                            return creatorAddress === userAddress;
                           });
+                          
+                          console.log('  - Created by user:', created.length);
                           return created.length;
                         })()}
                       </div>
@@ -1543,21 +1597,22 @@ export default function StacksClickAndShip({
                           <label className="block text-orange-200 mb-2 font-semibold">Duration (minutes)</label>
                           <input
                             type="range"
-                            min={10}
+                            min={100}
                             max={10080}
                             step={10}
                             value={voteDuration}
                             onChange={(e) => setVoteDuration(Number(e.target.value))}
                             className="w-full h-2 bg-orange-900/50 rounded-lg appearance-none cursor-pointer"
                             style={{
-                              background: `linear-gradient(to right, #f97316 0%, #f97316 ${(voteDuration / 10080) * 100}%, rgba(255, 255, 255, 0.1) ${(voteDuration / 10080) * 100}%, rgba(255, 255, 255, 0.1) 100%)`
+                              background: `linear-gradient(to right, #f97316 0%, #f97316 ${((voteDuration - 100) / (10080 - 100)) * 100}%, rgba(255, 255, 255, 0.1) ${((voteDuration - 100) / (10080 - 100)) * 100}%, rgba(255, 255, 255, 0.1) 100%)`
                             }}
                           />
                           <div className="flex justify-between text-xs text-orange-300/70 mt-2">
-                            <span>{voteDuration} min</span>
+                            <span>{voteDuration} min ({Math.ceil(voteDuration / 10)} blocks)</span>
                             <span>{(voteDuration / 60).toFixed(1)}h</span>
                             <span>{(voteDuration / 1440).toFixed(1)} days</span>
                           </div>
+                          <div className="text-xs text-orange-400/60 mt-1">Minimum: 100 minutes (10 blocks)</div>
                         </div>
 
                         <div>
