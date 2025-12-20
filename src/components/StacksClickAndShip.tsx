@@ -87,7 +87,7 @@ export default function StacksClickAndShip({
   const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
   const [selectedPoll, setSelectedPoll] = React.useState<any | null>(null);
   const [showVoteModal, setShowVoteModal] = React.useState(false);
-  const [currentBlockHeight, setCurrentBlockHeight] = React.useState<number>(0);
+
 
   // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
@@ -525,7 +525,7 @@ export default function StacksClickAndShip({
       
       // Pobierz aktualny block height
       const currentBlock = await fetchCurrentBlock();
-      setCurrentBlockHeight(currentBlock);
+      // setCurrentBlockHeight(currentBlock); // unused
       console.log('📍 Current block height:', currentBlock);
       
       // Pobierz statystyki globalne, aby wiedzieć ile głosowań jest
