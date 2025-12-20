@@ -58,7 +58,7 @@ export default function StacksClickAndShip() {
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'gm', label: 'GM', icon: Sun },
-    { id: 'vote', label: 'Vote', icon: CheckSquare },
+    { id: 'vote', label: 'Vote', icon: Vote },
     { id: 'message', label: 'Send Message', icon: MessageSquare },
     { id: 'deploy', label: 'Deploy', icon: Upload },
     { id: 'learn', label: 'Learn', icon: BookOpen }
