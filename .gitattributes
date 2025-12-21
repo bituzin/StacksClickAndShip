@@ -1,0 +1,2 @@
+# Treat all .clar files as Clarity for GitHub Linguist
+*.clar linguist-language=Clarity
