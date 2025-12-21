@@ -72,17 +72,15 @@ export function usePolls(userAddress: string | null) {
         
         if (pollData) {
           const endBlockHeight = pollData['ends-at'] ? parseValue(pollData['ends-at'].value) : 0;
-          const isActiveFromContract = pollData['is-active']?.value || false;
-          const blocksRemainingCalculated = Math.max(0, endBlockHeight - currentBlock);
-          
-          pollData['blocks-remaining'] = { value: blocksRemainingCalculated };
-          pollData['is-active-calculated'] = { value: isActiveFromContract };
-          
-          if (isActiveFromContract) {
-            active.push(pollData);
-          } else {
-            closed.push(pollData);
-          }
+            const isActiveCalculated = currentBlock < endBlockHeight;
+            const blocksRemainingCalculated = Math.max(0, endBlockHeight - currentBlock);
+            pollData['blocks-remaining'] = { value: blocksRemainingCalculated };
+            pollData['is-active-calculated'] = { value: isActiveCalculated };
+            if (isActiveCalculated) {
+              active.push(pollData);
+            } else {
+              closed.push(pollData);
+            }
         }
       }
       
