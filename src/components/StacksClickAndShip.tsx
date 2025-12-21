@@ -1,22 +1,40 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X, User } from 'lucide-react';
-import { UserSession } from '@stacks/connect';
 import { openContractCall } from '@stacks/connect';
-import { callReadOnlyFunction, cvToString, principalCV } from '@stacks/transactions';
+import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
 
-interface StacksClickAndShipProps {
-  isAuthenticated: boolean;
-  connectWallet: () => void;
-  userSession: UserSession;
-}
+// Import custom hooks
+import { usePolls, useUserVotingStats, useGMStats, useMessageStats } from '../hooks';
+
+// Import types
+import { StacksClickAndShipProps, TxPopup } from '../types';
+
+// Import constants
+import {
+  POST_MESSAGE_CONTRACT_ADDRESS,
+  POST_MESSAGE_CONTRACT_NAME,
+  GMOK_CONTRACT_ADDRESS,
+  GMOK_CONTRACT_NAME,
+  GET_NAME_CONTRACT_ADDRESS,
+  GET_NAME_CONTRACT_NAME
+} from '../constants/contracts';
 
 export default function StacksClickAndShip({ 
   isAuthenticated, 
   connectWallet, 
   userSession 
 }: StacksClickAndShipProps) {
+
+  // Helper do pobierania opcji głosowania w dowolnym formacie
+  const getPollOptions = (poll: any) => {
+    if (Array.isArray(poll.options)) return poll.options;
+    if (poll.options?.value && Array.isArray(poll.options.value)) return poll.options.value;
+    if (poll.options?.data && Array.isArray(poll.options.data)) return poll.options.data;
+    return [];
+  };
+
   const location = useLocation();
 
   // Determine active tab from pathname
@@ -37,39 +55,16 @@ export default function StacksClickAndShip({
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
-  // Adres kontraktu gmUnlimited
-  // Adres kontraktu do Post Message
-  const POST_MESSAGE_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  const POST_MESSAGE_CONTRACT_NAME = 'postMessage-cl4';
-  const GMOK_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  const GMOK_CONTRACT_NAME = 'gm-unlimited';
-  
-  // Adres i nazwa kontraktu get-name-v1
-  const GET_NAME_CONTRACT_ADDRESS = 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86';
-  const GET_NAME_CONTRACT_NAME = 'get-name-v1';
-
-  // State for GM counts
-  const [todayGm, setTodayGm] = React.useState<number | null>(null);
-  const [totalGm, setTotalGm] = React.useState<number | null>(null);
-  const [userGm, setUserGm] = React.useState<number | null>(null);
+  // User address state
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
-  // Stan dla popupu z transakcją
-  const [txPopup, setTxPopup] = React.useState<{show: boolean, txId: string} | null>(null);
-  // Stany dla statystyk Post Message
-  const [todayMessages, setTodayMessages] = React.useState<number | null>(null);
-  const [totalMessages, setTotalMessages] = React.useState<number | null>(null);
-  const [userMessages, setUserMessages] = React.useState<number | null>(null);
-  const [recentMessages, setRecentMessages] = React.useState<any[]>([]);
-  // Nowe stany do ostatniego GM i leaderboarda
-  const [lastGm, setLastGm] = React.useState<{user: string, block: number} | null>(null);
-  const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
-  const [leaderboard, setLeaderboard] = React.useState<Array<{user: string, total: number}>>([]);
-  // Stan dla wpisanej nazwy i wyniku sprawdzenia
+  
+  // Transaction popup state
+  const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
+  
+  // Get name states
   const [inputName, setInputName] = React.useState('');
-  // Stan dla użytkownika z już zarejestrowaną nazwą
   const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
-  // Stany dla popupów z wynikiem sprawdzenia
   const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
   const [showTakenPopup, setShowTakenPopup] = React.useState(false);
   
@@ -78,147 +73,45 @@ export default function StacksClickAndShip({
   const [voteTitle, setVoteTitle] = React.useState('');
   const [voteDescription, setVoteDescription] = React.useState('');
   const [voteOptions, setVoteOptions] = React.useState(['', '']);
-  const [voteDuration, setVoteDuration] = React.useState(100); // Czas w minutach (min 10 bloków = 100 min)
+  const [voteDuration, setVoteDuration] = React.useState(100);
   const [votesPerUser, setVotesPerUser] = React.useState(1);
   const [requiresSTX, setRequiresSTX] = React.useState(false);
   const [minSTXAmount, setMinSTXAmount] = React.useState(0);
-  const [activePolls, setActivePolls] = React.useState<any[]>([]);
-  const [closedPolls, setClosedPolls] = React.useState<any[]>([]);
-  const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
   const [selectedPoll, setSelectedPoll] = React.useState<any | null>(null);
   const [showVoteModal, setShowVoteModal] = React.useState(false);
 
+  // Use custom hooks
+  const {
+    todayGm,
+    totalGm,
+    userGm,
+    lastGm,
+    lastGmAgo,
+    leaderboard,
+    fetchGmCounts,
+    fetchLastGmAndLeaderboard
+  } = useGMStats(userAddress);
 
-  // Pobierz ostatni GM i prosty leaderboard (z ostatnich 3 adresów)
-  const fetchLastGmAndLeaderboard = React.useCallback(async () => {
-    try {
-      console.log('Fetching last GM and leaderboard...');
-      // Pobierz ostatnie 3 GM
-      const res = await callReadOnlyFunction({
-        contractAddress: GMOK_CONTRACT_ADDRESS,
-        contractName: GMOK_CONTRACT_NAME,
-        functionName: 'get-last-three-gms',
-        functionArgs: [],
-        network: new StacksMainnet(),
-        senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
-      });
-      
-      console.log('Raw response from get-last-three-gms:', res);
-      console.log('Response value:', (res as any).value);
-      console.log('Response value data:', (res as any).value?.data);
-      
-      const gms = (res as any).value?.data;
-      console.log('GMs data:', gms);
-      
-      if (!gms) {
-        console.log('No GMs data found');
-        setLastGm(null);
-        setLastGmAgo(null);
-        setLeaderboard([]);
-        return;
-      }
-      
-      // Sprawdź strukturę first, second, third
-      console.log('First GM:', gms.first);
-      console.log('Second GM:', gms.second);
-      console.log('Third GM:', gms.third);
-      
-      // gms.first, gms.second, gms.third - to są optional types w Clarity
-      // type: 10 = some, type: 9 = none
-      const gmList = [];
-      
-      if (gms.first && gms.first.type === 10) {
-        gmList.push(gms.first.value);
-      }
-      if (gms.second && gms.second.type === 10) {
-        gmList.push(gms.second.value);
-      }
-      if (gms.third && gms.third.type === 10) {
-        gmList.push(gms.third.value);
-      }
+  const {
+    todayMessages,
+    totalMessages,
+    userMessages,
+    recentMessages,
+    fetchMessageCounts
+  } = useMessageStats(userAddress, isAuthenticated);
 
-      console.log('Filtered GM list:', gmList);
+  const {
+    activePolls,
+    closedPolls,
+    isLoadingPolls,
+    fetchPolls
+  } = usePolls(userAddress);
 
-      if (gmList.length > 0) {
-        // Najnowszy GM
-        const last: any = gmList[0];
-        console.log('Last GM structure:', last);
-        console.log('Last GM data:', last.data);
-        
-        // Konwertuj principal na string
-        const userObj = last.data?.user || last.user;
-        const userPrincipal = typeof userObj === 'string' ? userObj : cvToString(userObj);
-        const blockHeightObj = last.data?.['block-height'] || last['block-height'];
-        const blockHeight = typeof blockHeightObj === 'bigint' || typeof blockHeightObj === 'number' 
-          ? blockHeightObj 
-          : blockHeightObj?.value;
-        
-        console.log('Extracted user:', userPrincipal);
-        console.log('Extracted block:', blockHeight);
-        
-        if (userPrincipal) {
-          setLastGm({ user: userPrincipal, block: Number(blockHeight) });
-          
-          // Oblicz ile bloków temu (zakładamy 10 min/block)
-          const currentBlock = await fetchCurrentBlock();
-          const diff = currentBlock - Number(blockHeight);
-          const minutes = diff * 10;
-          setLastGmAgo(minutes < 60 ? `${minutes} min ago` : `${(minutes/60).toFixed(1)} h ago`);
-          console.log('Last GM set:', userPrincipal, `${minutes} min ago`);
-        }
-      } else {
-        console.log('No GMs in list');
-        setLastGm(null);
-        setLastGmAgo(null);
-      }
-
-      // Leaderboard: z tych 3 adresów pobierz total-gms
-      const users = Array.from(new Set(gmList.map((g: any) => {
-        const userObj = g.data?.user || g.user;
-        return typeof userObj === 'string' ? userObj : cvToString(userObj);
-      }).filter(Boolean)));
-      console.log('Unique users for leaderboard:', users);
-      
-      const leaderboardData = await Promise.all(users.map(async (addr: string) => {
-        const res: any = await callReadOnlyFunction({
-          contractAddress: GMOK_CONTRACT_ADDRESS,
-          contractName: GMOK_CONTRACT_NAME,
-          functionName: 'get-user-total-gms',
-          functionArgs: [principalCV(addr)],
-          network: new StacksMainnet(),
-          senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
-        });
-        // Clarity uint
-        let total = 0;
-        if (res && (res as any).value && (res as any).value.value !== undefined) {
-          const val = (res as any).value.value;
-          total = typeof val === 'string' ? Number(val.replace(/n$/, '')) : Number(val);
-        }
-        return { user: addr, total };
-      }));
-      // Sortuj malejąco
-      leaderboardData.sort((a, b) => b.total - a.total);
-      setLeaderboard(leaderboardData);
-      console.log('Leaderboard set:', leaderboardData);
-    } catch (e) {
-      console.error('Error fetching last GM and leaderboard:', e);
-      setLastGm(null);
-      setLastGmAgo(null);
-      setLeaderboard([]);
-    }
-  }, [userAddress]);
-
-  // Pomocnicza: pobierz aktualny block-height z Hiro API
-  async function fetchCurrentBlock() {
-    try {
-      const res = await fetch('https://api.mainnet.hiro.so/v2/info');
-      const data = await res.json();
-      console.log('📍 Block heights - burn:', data.burn_block_height, 'stacks:', data.stacks_tip_height);
-      return data.burn_block_height; // MUSI być burn_block_height bo kontrakt używa tego!
-    } catch {
-      return 0;
-    }
-  }
+  const {
+    userPollsVoted,
+    userTotalVotesCast,
+    fetchUserVotingStats
+  } = useUserVotingStats(userAddress);
 
   // Aktualizuj adres użytkownika gdy zmienia się autentykacja
   React.useEffect(() => {
@@ -295,385 +188,31 @@ export default function StacksClickAndShip({
     }
   }, [activeTab, checkUserName]);
 
-  // Funkcja do pobierania statystyk GM
-  const fetchGmCounts = React.useCallback(async () => {
-    try {
-      // Najpierw spróbuj backend API (szybszy cache)
-      try {
-        const backendUrl = 'https://gm-backend-seven.vercel.app/api/stats';
-        const response = await fetch(backendUrl);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📊 Stats from backend:', data);
-          setTodayGm(data.todayGm);
-          setTotalGm(data.totalGm);
-          
-          // Pobierz tylko user stats z blockchain
-          if (isAuthenticated && userAddress) {
-            const { principalCV } = await import('@stacks/transactions');
-            const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
-            const userRes = await callReadOnlyFunction({
-              contractAddress: GMOK_CONTRACT_ADDRESS,
-              contractName: GMOK_CONTRACT_NAME,
-              functionName: 'get-user-total-gms',
-              functionArgs: [principalCV(userAddress)],
-              network: new StacksMainnet(),
-              senderAddress,
-            });
-            const parseClarityUint = (res: any): number | null => {
-              if (res && res.value && res.value.value !== undefined) {
-                const val = res.value.value;
-                if (typeof val === 'string') return Number(val.replace(/n$/, ''));
-                if (typeof val === 'bigint') return Number(val);
-                return Number(val);
-              }
-              return null;
-            };
-            setUserGm(parseClarityUint(userRes));
-          } else {
-            setUserGm(null);
-          }
-          
-          console.log('✅ Using backend stats (faster!)');
-          return; // Sukces - nie pytaj blockchain
-        }
-      } catch (backendError) {
-        console.log('⚠️ Backend failed, falling back to blockchain:', backendError);
-      }
-      
-      // Fallback: pobierz z blockchain (wolniejsze)
-      const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
-      
-      // Helper to parse Clarity response
-      const parseClarityUint = (res: any): number | null => {
-        if (res && res.value && res.value.value !== undefined) {
-          const val = res.value.value;
-          if (typeof val === 'string') {
-            return Number(val.replace(/n$/, ''));
-          }
-          if (typeof val === 'bigint') {
-            return Number(val);
-          }
-          return Number(val);
-        }
-        return null;
-      };
-      
-      // Today's GM
-      const todayRes = await callReadOnlyFunction({
-        contractAddress: GMOK_CONTRACT_ADDRESS,
-        contractName: GMOK_CONTRACT_NAME,
-        functionName: 'get-daily-gm-count',
-        functionArgs: [],
-        network: new StacksMainnet(),
-        senderAddress,
-      });
-      
-      // Total GM
-      const totalRes = await callReadOnlyFunction({
-        contractAddress: GMOK_CONTRACT_ADDRESS,
-        contractName: GMOK_CONTRACT_NAME,
-        functionName: 'get-total-gms-alltime',
-        functionArgs: [],
-        network: new StacksMainnet(),
-        senderAddress,
-      });
-      
-      setTodayGm(parseClarityUint(todayRes));
-      setTotalGm(parseClarityUint(totalRes));
-      
-      // User's GM (if authenticated)
-      if (isAuthenticated && userAddress) {
-        const { principalCV } = await import('@stacks/transactions');
-        const userRes = await callReadOnlyFunction({
-          contractAddress: GMOK_CONTRACT_ADDRESS,
-          contractName: GMOK_CONTRACT_NAME,
-          functionName: 'get-user-total-gms',
-          functionArgs: [principalCV(userAddress)],
-          network: new StacksMainnet(),
-          senderAddress,
-        });
-        setUserGm(parseClarityUint(userRes));
-      } else {
-        setUserGm(null);
-      }
-      
-      console.log('📡 Using blockchain stats (slower fallback)');
-    } catch (e) {
-      console.error('GM fetch error', e);
-      setTodayGm(null);
-      setTotalGm(null);
-      setUserGm(null);
+  // Helper function to extract string from Clarity value
+  const extractString = (value: any): string => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      if ('value' in value) return String(value.value);
+      if ('data' in value) return String(value.data);
     }
-  }, [userAddress, isAuthenticated]);
-
-  // Funkcja do pobierania statystyk Post Message
-  const fetchMessageCounts = React.useCallback(async () => {
-    try {
-      const senderAddress = userAddress || 'SP000000000000000000002Q6VF78';
-      const parseClarityUint = (res: any): number | null => {
-        if (res && res.value && res.value.value !== undefined) {
-          const val = res.value.value;
-          if (typeof val === 'string') {
-            return Number(val.replace(/n$/, ''));
-          }
-          if (typeof val === 'bigint') {
-            return Number(val);
-          }
-          return Number(val);
-        }
-        return null;
-      };
-      
-      // Pobierz statystyki z get-stats
-      const statsRes = await callReadOnlyFunction({
-        contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-        contractName: POST_MESSAGE_CONTRACT_NAME,
-        functionName: 'get-stats',
-        functionArgs: [],
-        network: new StacksMainnet(),
-        senderAddress,
-      });
-      
-      // Wyciągnij dane ze struktury
-      const stats = (statsRes as any)?.value?.data;
-      let totalMessagesCount = 0;
-      if (stats) {
-        const todayVal = stats['today-messages']?.value;
-        const totalVal = stats['total-messages']?.value;
-        totalMessagesCount = typeof totalVal === 'bigint' ? Number(totalVal) : (typeof totalVal === 'string' ? Number(totalVal.replace(/n$/, '')) : Number(totalVal));
-        setTodayMessages(typeof todayVal === 'bigint' ? Number(todayVal) : (typeof todayVal === 'string' ? Number(todayVal.replace(/n$/, '')) : Number(todayVal)));
-        setTotalMessages(totalMessagesCount);
-      }
-      
-      // Pobierz liczbę wiadomości użytkownika
-      if (isAuthenticated && userAddress) {
-        const { principalCV } = await import('@stacks/transactions');
-        const userRes = await callReadOnlyFunction({
-          contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-          contractName: POST_MESSAGE_CONTRACT_NAME,
-          functionName: 'get-user-message-count',
-          functionArgs: [principalCV(userAddress)],
-          network: new StacksMainnet(),
-          senderAddress,
-        });
-        setUserMessages(parseClarityUint(userRes));
-      } else {
-        setUserMessages(null);
-      }
-
-      // Pobierz ostatnie wiadomości (max 20 dozwolone przez kontrakt)
-      if (totalMessagesCount > 0) {
-        const { uintCV } = await import('@stacks/transactions');
-        const count = totalMessagesCount >= 20 ? 20 : totalMessagesCount;
-        const latestRes = await callReadOnlyFunction({
-          contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-          contractName: POST_MESSAGE_CONTRACT_NAME,
-          functionName: 'get-latest-messages',
-          functionArgs: [uintCV(count)],
-          network: new StacksMainnet(),
-          senderAddress,
-        });
-        
-        console.log('Latest messages response:', latestRes);
-        
-        // Parsowanie wiadomości
-        const data = (latestRes as any)?.value?.data;
-        console.log('Latest messages data:', data);
-        console.log('Messages object:', data?.messages);
-        console.log('Messages list:', data?.messages?.list);
-        
-        if (data && data.messages && data.messages.list) {
-          console.log('Messages array length:', data.messages.list.length);
-          console.log('First message raw:', data.messages.list[0]);
-          
-          const msgs = data.messages.list
-            .filter((m: any) => {
-              console.log('Message type:', m?.type, 'Message:', m);
-              return m && m.type === 10;
-            })
-            .map((m: any) => {
-              console.log('Mapping message:', m);
-              console.log('Message value data:', m.value.data);
-              return m.value.data;
-            });
-          
-          console.log('Parsed messages:', msgs);
-          
-          setRecentMessages(msgs);
-        } else {
-          console.log('No messages data found');
-          setRecentMessages([]);
-        }
-      } else {
-        setRecentMessages([]);
-      }
-    } catch (e) {
-      console.error('Message fetch error', e);
-      setTodayMessages(null);
-      setTotalMessages(null);
-      setUserMessages(null);
-      setRecentMessages([]);
-    }
-  }, [userAddress, isAuthenticated]);
-
-  const fetchPolls = React.useCallback(async () => {
-    try {
-      setIsLoadingPolls(true);
-      console.log('🔍 Rozpoczynam pobieranie głosowań...');
-      const { uintCV } = await import('@stacks/transactions');
-      
-      // Pobierz aktualny block height
-      const currentBlock = await fetchCurrentBlock();
-      // setCurrentBlockHeight(currentBlock); // unused
-      console.log('📍 Current block height:', currentBlock);
-      
-      // Pobierz statystyki globalne, aby wiedzieć ile głosowań jest
-      const statsRes = await callReadOnlyFunction({
-        contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
-        contractName: 'votingv1',
-        functionName: 'get-global-stats',
-        functionArgs: [],
-        network: new StacksMainnet(),
-        senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
-      });
-      
-      console.log('📊 Raw stats response:', statsRes);
-      console.log('📊 Stats value:', (statsRes as any).value);
-      console.log('📊 Stats data:', (statsRes as any).value?.data);
-      
-      const stats = (statsRes as any).value?.data;
-      
-      // Parsowanie totalPolls - różne możliwe formaty
-      let totalPolls = 0;
-      if (stats?.['total-polls']) {
-        const pollsValue = stats['total-polls'].value;
-        if (typeof pollsValue === 'bigint') {
-          totalPolls = Number(pollsValue);
-        } else if (typeof pollsValue === 'string') {
-          totalPolls = Number(pollsValue.replace(/n$/, ''));
-        } else if (typeof pollsValue === 'number') {
-          totalPolls = pollsValue;
-        }
-      }
-      
-      console.log('✅ Total polls:', totalPolls);
-      
-      if (totalPolls === 0) {
-        console.log('⚠️ Brak głosowań w kontrakcie');
-        setActivePolls([]);
-        setClosedPolls([]);
-        setIsLoadingPolls(false);
-        return;
-      }
-      
-      // Pobierz wszystkie głosowania (od 1 do totalPolls)
-      console.log(`🔄 Pobieranie ${totalPolls} głosowań...`);
-      const pollPromises = [];
-      for (let i = 1; i <= totalPolls; i++) {
-        pollPromises.push(
-          callReadOnlyFunction({
-            contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
-            contractName: 'votingv1',
-            functionName: 'get-poll-full-details',
-            functionArgs: [uintCV(i)],
-            network: new StacksMainnet(),
-            senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
-          }).catch(err => {
-            console.error(`❌ Błąd pobierania głosowania #${i}:`, err);
-            return null;
-          })
-        );
-      }
-      
-      const pollResults = await Promise.all(pollPromises);
-      console.log('📦 Poll results:', pollResults);
-      
-      const active = [];
-      const closed = [];
-      
-      for (let i = 0; i < pollResults.length; i++) {
-        const res = pollResults[i];
-        if (!res) continue;
-        
-        console.log(`🔍 Processing poll #${i + 1}:`, res);
-        const pollData = (res as any).value?.data;
-        console.log(`📝 Poll #${i + 1} data:`, pollData);
-        
-        if (pollData) {
-          // Log creator data for debugging
-          console.log(`👤 Poll #${i + 1} creator:`, pollData.creator);
-          
-          // Kontrakt zwraca 'ends-at', NIE 'end-block-height'!
-          let endBlockHeight = 0;
-          if (pollData['ends-at']) {
-            const endValue = pollData['ends-at'].value;
-            if (typeof endValue === 'bigint') {
-              endBlockHeight = Number(endValue);
-            } else if (typeof endValue === 'string') {
-              endBlockHeight = Number(endValue.replace(/n$/, ''));
-            } else if (typeof endValue === 'number') {
-              endBlockHeight = endValue;
-            }
-          }
-          
-          // Kontrakt już zwraca is-active i blocks-remaining, użyjmy tego!
-          const isActiveFromContract = pollData['is-active']?.value || false;
-          const blocksRemainingFromContract = pollData['blocks-remaining']?.value || 0;
-          const blocksRemaining = typeof blocksRemainingFromContract === 'bigint' 
-            ? Number(blocksRemainingFromContract) 
-            : blocksRemainingFromContract;
-          
-          // Ale też obliczmy sami dla weryfikacji
-          const isActiveCalculated = currentBlock < endBlockHeight;
-          const blocksRemainingCalculated = Math.max(0, endBlockHeight - currentBlock);
-          
-          console.log(`📊 Poll #${i + 1}:`);
-          console.log(`  - ends-at: ${endBlockHeight}`);
-          console.log(`  - current block: ${currentBlock}`);
-          console.log(`  - Contract says: isActive=${isActiveFromContract}, blocksRemaining=${blocksRemaining}`);
-          console.log(`  - Calculated: isActive=${isActiveCalculated}, blocksRemaining=${blocksRemainingCalculated}`);
-          
-          // Użyj wartości z kontraktu (kontrakt wie najlepiej!)
-          const isActive = isActiveFromContract;
-          
-          // Ale nadpisz blocks-remaining naszą kalkulacją (bardziej aktualne)
-          pollData['blocks-remaining'] = { value: blocksRemainingCalculated };
-          pollData['is-active-calculated'] = { value: isActive };
-          
-          if (isActive) {
-            console.log(`✅ Poll #${i + 1} jest AKTYWNE`);
-            active.push(pollData);
-          } else {
-            console.log(`⏸️ Poll #${i + 1} jest ZAKOŃCZONE`);
-            closed.push(pollData);
-          }
-        }
-      }
-      
-      console.log(`✅ Znaleziono ${active.length} aktywnych i ${closed.length} zakończonych głosowań`);
-      setActivePolls(active);
-      setClosedPolls(closed);
-    } catch (e) {
-      console.error('❌ Błąd pobierania głosowań:', e);
-    } finally {
-      setIsLoadingPolls(false);
-    }
-  }, [userAddress]);
+    return '';
+  };
 
   React.useEffect(() => {
+    // Upewnij się, że userAddress jest ustawiony
+    if (!userAddress) return;
     fetchGmCounts();
     fetchLastGmAndLeaderboard();
     fetchMessageCounts();
     fetchPolls();
-    
-    // Auto-refresh polls co minutę
-    const pollInterval = setInterval(() => {
+    fetchUserVotingStats();
+    // Auto-refresh co minutę
+    const interval = setInterval(() => {
       fetchPolls();
-    }, 60000); // 60 sekund
-    
-    return () => clearInterval(pollInterval);
-  }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls]);
+      fetchUserVotingStats();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [userAddress, fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls, fetchUserVotingStats]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -1082,54 +621,83 @@ export default function StacksClickAndShip({
                 </div>
               </div>
 
-              <textarea 
-                id="postMessageInput"
-                placeholder="What's on your mind?"
-                className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 h-32 resize-none mb-4"
-                maxLength={280}
-                onInput={e => {
-                  const el = e.target as HTMLTextAreaElement;
-                  const counter = document.getElementById('postMessageCounter');
-                  if (counter) counter.textContent = `${280 - el.value.length} characters left`;
-                }}
-              ></textarea>
+              <div className="mb-4">
+                <label className="block text-purple-300 text-sm mb-2">
+                  ⚠️ Note: Message must contain only ASCII characters (no emoji or special characters)
+                </label>
+                <textarea 
+                  id="postMessageInput"
+                  placeholder="What's on your mind? (ASCII characters only)"
+                  className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 h-32 resize-none"
+                  maxLength={280}
+                  onInput={e => {
+                    const el = e.target as HTMLTextAreaElement;
+                    const counter = document.getElementById('postMessageCounter');
+                    if (counter) counter.textContent = `${280 - el.value.length} characters left`;
+                  }}
+                ></textarea>
+              </div>
               <div id="postMessageCounter" className="text-purple-400 text-sm mb-6">280 characters left</div>
 
 
               <button 
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!isAuthenticated}
                 onClick={async () => {
-                  if (!isAuthenticated) return;
+                  if (!isAuthenticated) {
+                    alert('Please connect your wallet first!');
+                    return;
+                  }
+                  
                   const input = document.getElementById('postMessageInput') as HTMLTextAreaElement | null;
                   const value: string = input && 'value' in input ? (input.value as string) : '';
-                  if (!value || value.length === 0) return;
-                  await openContractCall({
-                    network: new StacksMainnet(),
-                    anchorMode: 1,
-                    contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-                    contractName: POST_MESSAGE_CONTRACT_NAME,
-                    functionName: 'post-message',
-                    functionArgs: [
-                      (await import('@stacks/transactions')).stringAsciiCV(value)
-                    ],
-                    appDetails: {
-                      name: 'Stacks Click & Ship',
-                      icon: window.location.origin + '/vite.svg',
-                    },
-                    onFinish: (data) => {
-                      if (input) (input as HTMLTextAreaElement).value = '';
-                      const counter = document.getElementById('postMessageCounter');
-                      if (counter) counter.textContent = '280 characters left';
-                      // Odśwież statystyki po 5 sekundach
-                      setTimeout(() => fetchMessageCounts(), 5000);
-                      // Wyświetl niestandardowy popup z linkiem
-                      const txId = data?.txId;
-                      if (txId) {
-                        setTxPopup({ show: true, txId });
-                      }
-                    },
-                  });
+                  
+                  if (!value || value.length === 0) {
+                    alert('Please enter a message!');
+                    return;
+                  }
+                  
+                  // Check if message contains only ASCII characters
+                  const isAscii = /^[\x00-\x7F]*$/.test(value);
+                  if (!isAscii) {
+                    alert('Message can only contain ASCII characters (no emoji or special characters). Please remove non-ASCII characters.');
+                    return;
+                  }
+                  
+                  try {
+                    const { stringAsciiCV } = await import('@stacks/transactions');
+                    
+                    await openContractCall({
+                      network: new StacksMainnet(),
+                      anchorMode: 1,
+                      contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+                      contractName: POST_MESSAGE_CONTRACT_NAME,
+                      functionName: 'post-message',
+                      functionArgs: [stringAsciiCV(value)],
+                      appDetails: {
+                        name: 'Stacks Click & Ship',
+                        icon: window.location.origin + '/vite.svg',
+                      },
+                      onFinish: (data) => {
+                        if (input) (input as HTMLTextAreaElement).value = '';
+                        const counter = document.getElementById('postMessageCounter');
+                        if (counter) counter.textContent = '280 characters left';
+                        // Odśwież statystyki po 5 sekundach
+                        setTimeout(() => fetchMessageCounts(), 5000);
+                        // Wyświetl niestandardowy popup z linkiem
+                        const txId = data?.txId;
+                        if (txId) {
+                          setTxPopup({ show: true, txId });
+                        }
+                      },
+                      onCancel: () => {
+                        console.log('Transaction cancelled by user');
+                      },
+                    });
+                  } catch (error) {
+                    console.error('Error posting message:', error);
+                    alert('Error posting message: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                  }
                 }}
               >
                 📤 Post Message
@@ -1185,97 +753,27 @@ export default function StacksClickAndShip({
                 </div>
               </div>
 
-              {/* Ostatnie wiadomości - przewijane */}
-              {recentMessages.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center justify-between">
-                    <span className="flex items-center">
-                      <Mail className="mr-2 text-orange-300" size={22} /> Recent Messages
-                    </span>
-                    <span className="text-sm text-orange-300 font-normal">
-                      {recentMessages.length} wiadomość{recentMessages.length !== 1 ? 'i' : ''}
-                    </span>
+              {/* Statystyki użytkownika - głosowania */}
+              {isAuthenticated && userAddress && (
+                <div className="mt-8 bg-gradient-to-br from-orange-900/40 to-purple-900/40 rounded-xl p-6 border border-orange-500/30">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <User className="mr-2 text-orange-400" size={24} />
+                    Your Voting Activity
                   </h3>
-                  <div className="overflow-hidden rounded-lg border border-orange-500/30">
-                    <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      <table className="min-w-full bg-orange-900/40">
-                        <thead className="sticky top-0 bg-orange-800/90 backdrop-blur-sm z-10">
-                          <tr>
-                            <th className="px-3 py-3 text-orange-200 text-left font-semibold">#</th>
-                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Sender</th>
-                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Content</th>
-                            <th className="px-4 py-3 text-orange-200 text-left font-semibold">Sent</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-orange-500/20">
-                          {[...recentMessages].reverse().map((msg, idx) => {
-                            // Wyciągnij blockHeight
-                            let blockHeight = null;
-                            if (msg.block && (typeof msg.block.value === 'number' || typeof msg.block.value === 'bigint')) {
-                              blockHeight = Number(msg.block.value);
-                            } else if (typeof msg.block === 'number' || typeof msg.block === 'bigint') {
-                              blockHeight = Number(msg.block);
-                            }
-                            // Załóż, że aktualny blok to  burn-block-height z ostatniej wiadomości lub max z listy
-                            let currentBlock = null;
-                            if (recentMessages.length > 0) {
-                              const blocks = recentMessages.map(m => m.block && m.block.value ? Number(m.block.value) : (typeof m.block === 'number' ? m.block : 0));
-                              currentBlock = Math.max(...blocks);
-                            }
-                            let ago = '';
-                            if (blockHeight && currentBlock) {
-                              const diff = currentBlock - blockHeight;
-                              const minutes = diff * 10;
-                              ago = minutes < 60 ? `${minutes} min ago` : `${(minutes/60).toFixed(1)} h ago`;
-                            }
-                            return (
-                              <tr key={idx} className="bg-orange-900/20 hover:bg-orange-800/40 transition-colors">
-                                <td className="px-3 py-3 text-orange-400 font-bold">
-                                  {recentMessages.length - idx}
-                                </td>
-                                <td className="px-4 py-3 text-orange-200 font-mono text-xs break-all">
-                                  {(() => {
-                                    const addr = cvToString(msg.sender);
-                                    if (!addr) return '';
-                                    const short = addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr;
-                                    return (
-                                      <a
-                                        href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="hover:underline text-orange-300"
-                                        title={addr}
-                                      >
-                                        {short}
-                                      </a>
-                                    );
-                                  })()}
-                                </td>
-                                <td className="px-4 py-3 text-white break-words text-xs lowercase">
-                                  {(() => {
-                                    let text = '';
-                                    if (msg.content) {
-                                      if (msg.content.value) text = msg.content.value;
-                                      else if (typeof cvToString === 'function') text = cvToString(msg.content).replace(/^"|"$/g, '');
-                                    }
-                                    // Usuń 'u"' na początku, jeśli występuje
-                                    if (text.startsWith('u"')) text = text.slice(2);
-                                    return text;
-                                  })()}
-                                </td>
-                                <td className="px-4 py-3 text-orange-300 text-xs text-right">
-                                  {ago}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                      <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
+                      <div className="text-3xl font-bold text-white">
+                        {userPollsVoted}
+                      </div>
+                    </div>
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                      <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
+                      <div className="text-3xl font-bold text-white">
+                        {userTotalVotesCast}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs text-orange-400/70 mt-2 text-center italic">
-                    ↓ Scroll down to see more messages ↓
-                  </p>
                 </div>
               )}
             </div>
@@ -1318,18 +816,7 @@ export default function StacksClickAndShip({
                           
                           const created = [...activePolls, ...closedPolls].filter(poll => {
                             // creator jest principal w Clarity - może być w różnych formatach
-                            let creatorAddress = '';
-                            
-                            if (poll.creator?.value) {
-                              // Jeśli ma .value, to jest ClarityValue
-                              creatorAddress = poll.creator.value;
-                            } else if (typeof poll.creator === 'string') {
-                              // Już jest string
-                              creatorAddress = poll.creator;
-                            } else if (poll.creator?.data) {
-                              // Może być w .data
-                              creatorAddress = poll.creator.data;
-                            }
+                            const creatorAddress = extractString(poll.creator);
                             
                             console.log(`  - Poll creator: "${creatorAddress}" vs user: "${userAddress}"`);
                             console.log(`  - Poll creator object:`, poll.creator);
@@ -1346,15 +833,13 @@ export default function StacksClickAndShip({
                     <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
                       <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
                       <div className="text-3xl font-bold text-white">
-                        {/* TODO: Track voted polls */}
-                        0
+                        {userPollsVoted}
                       </div>
                     </div>
                     <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
                       <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
                       <div className="text-3xl font-bold text-white">
-                        {/* TODO: Track total votes */}
-                        0
+                        {userTotalVotesCast}
                       </div>
                     </div>
                   </div>
@@ -1390,8 +875,8 @@ export default function StacksClickAndShip({
                         {activePolls.map((poll) => {
                       const pollIdRaw = poll['poll-id']?.value;
                       const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
-                      const title = poll.title?.value || poll.title?.data || 'No title';
-                      const description = poll.description?.value || poll.description?.data || '';
+                      const title = extractString(poll.title) || 'No title';
+                      const description = extractString(poll.description) || '';
                       const totalVotesRaw = poll['total-votes']?.value || 0;
                       const totalVotes = typeof totalVotesRaw === 'bigint' ? Number(totalVotesRaw) : totalVotesRaw;
                       const totalVotersRaw = poll['total-voters']?.value || 0;
@@ -1460,8 +945,8 @@ export default function StacksClickAndShip({
                     {closedPolls.map((poll) => {
                       const pollIdRaw = poll['poll-id']?.value;
                       const pollId = typeof pollIdRaw === 'bigint' ? Number(pollIdRaw) : pollIdRaw;
-                      const title = poll.title?.value || poll.title?.data || 'No title';
-                      const description = poll.description?.value || poll.description?.data || '';
+                      const title = extractString(poll.title) || 'No title';
+                      const description = extractString(poll.description) || '';
                       const totalVotesRaw = poll['total-votes']?.value || 0;
                       const totalVotes = typeof totalVotesRaw === 'bigint' ? Number(totalVotesRaw) : totalVotesRaw;
                       const totalVotersRaw = poll['total-voters']?.value || 0;
@@ -1736,83 +1221,85 @@ export default function StacksClickAndShip({
                       </div>
                     )}
 
-                    {/* Options to vote */}
+                    {/* Helper to get poll options in any format */}
+
+
                     {selectedPoll['is-active-calculated']?.value && isAuthenticated ? (
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">Cast your vote:</h4>
-                        {selectedPoll.options?.value?.map((option: any, index: number) => {
-                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
-                          const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
-                          const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
-                          const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
-                            ? Number(selectedPoll['total-votes'].value) 
-                            : selectedPoll['total-votes']?.value || 0;
-                          const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
-                          
-                          return (
-                            <button
-                              key={index}
-                              onClick={async () => {
-                                try {
-                                  const { uintCV } = await import('@stacks/transactions');
-                                  const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
-                                    ? Number(selectedPoll['poll-id'].value) 
-                                    : selectedPoll['poll-id']?.value;
-                                  
-                                  await openContractCall({
-                                    contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
-                                    contractName: 'votingv1',
-                                    functionName: 'cast-vote',
-                                    functionArgs: [uintCV(pollId), uintCV(index)],
-                                    network: new StacksMainnet(),
-                                    onFinish: (data: any) => {
-                                      console.log('Vote submitted:', data);
-                                      setTxPopup({ show: true, txId: data.txId });
-                                      setShowVoteModal(false);
-                                      setSelectedPoll(null);
-                                      // Odśwież głosowania po 5 sekundach
-                                      setTimeout(() => fetchPolls(), 5000);
-                                    },
-                                    onCancel: () => {
-                                      console.log('Vote cancelled');
-                                    },
-                                  });
-                                } catch (e) {
-                                  console.error('Vote error:', e);
-                                  alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
-                                }
-                              }}
-                              className="w-full text-left p-4 rounded-lg bg-orange-900/50 hover:bg-orange-800/70 border border-orange-500/30 hover:border-orange-500/50 transition-all"
-                            >
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-white font-medium">{optionText}</span>
-                                <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
-                              </div>
-                              <div className="w-full bg-orange-900/30 rounded-full h-2">
-                                <div 
-                                  className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                            </button>
-                          );
-                        })}
+                        {(() => {
+                          console.log('🟠 selectedPoll:', selectedPoll);
+                          const options = getPollOptions(selectedPoll);
+                          console.log('🟠 getPollOptions(selectedPoll):', options);
+                          return options.map((option: any, index: number) => {
+                            const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
+                            const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
+                            const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                            const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
+                              ? Number(selectedPoll['total-votes'].value) 
+                              : selectedPoll['total-votes']?.value || 0;
+                            const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
+                            return (
+                              <button
+                                key={index}
+                                onClick={async () => {
+                                  try {
+                                    const { uintCV } = await import('@stacks/transactions');
+                                    const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
+                                      ? Number(selectedPoll['poll-id'].value) 
+                                      : selectedPoll['poll-id']?.value;
+                                    await openContractCall({
+                                      contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+                                      contractName: 'votingv1',
+                                      functionName: 'cast-vote',
+                                      functionArgs: [uintCV(pollId), uintCV(index)],
+                                      network: new StacksMainnet(),
+                                      onFinish: (data: any) => {
+                                        console.log('Vote submitted:', data);
+                                        setTxPopup({ show: true, txId: data.txId });
+                                        setShowVoteModal(false);
+                                        setSelectedPoll(null);
+                                        setTimeout(() => fetchPolls(), 5000);
+                                      },
+                                      onCancel: () => {
+                                        console.log('Vote cancelled');
+                                      },
+                                    });
+                                  } catch (e) {
+                                    console.error('Vote error:', e);
+                                    alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
+                                  }
+                                }}
+                                className="w-full text-left p-4 rounded-lg bg-orange-900/50 hover:bg-orange-800/70 border border-orange-500/30 hover:border-orange-500/50 transition-all"
+                              >
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-white font-medium">{optionText}</span>
+                                  <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
+                                </div>
+                                <div className="w-full bg-orange-900/30 rounded-full h-2">
+                                  <div 
+                                    className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
                     ) : (
-                      /* Results for ended polls or not authenticated */
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">
                           {selectedPoll['is-active-calculated']?.value ? 'Current Results:' : 'Final Results:'}
                         </h4>
-                        {selectedPoll.options?.value?.map((option: any, index: number) => {
-                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
+                        {getPollOptions(selectedPoll).map((option: any, index: number) => {
+                          const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
                           const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
                           const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
                           const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
                             ? Number(selectedPoll['total-votes'].value) 
                             : selectedPoll['total-votes']?.value || 0;
                           const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
-                          
                           return (
                             <div key={index} className="p-4 rounded-lg bg-gray-800/50 border border-gray-600/30">
                               <div className="flex justify-between items-center mb-2">
