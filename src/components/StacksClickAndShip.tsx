@@ -1082,54 +1082,83 @@ export default function StacksClickAndShip({
                 </div>
               </div>
 
-              <textarea 
-                id="postMessageInput"
-                placeholder="What's on your mind?"
-                className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 h-32 resize-none mb-4"
-                maxLength={280}
-                onInput={e => {
-                  const el = e.target as HTMLTextAreaElement;
-                  const counter = document.getElementById('postMessageCounter');
-                  if (counter) counter.textContent = `${280 - el.value.length} characters left`;
-                }}
-              ></textarea>
+              <div className="mb-4">
+                <label className="block text-purple-300 text-sm mb-2">
+                  ⚠️ Note: Message must contain only ASCII characters (no emoji or special characters)
+                </label>
+                <textarea 
+                  id="postMessageInput"
+                  placeholder="What's on your mind? (ASCII characters only)"
+                  className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400 h-32 resize-none"
+                  maxLength={280}
+                  onInput={e => {
+                    const el = e.target as HTMLTextAreaElement;
+                    const counter = document.getElementById('postMessageCounter');
+                    if (counter) counter.textContent = `${280 - el.value.length} characters left`;
+                  }}
+                ></textarea>
+              </div>
               <div id="postMessageCounter" className="text-purple-400 text-sm mb-6">280 characters left</div>
 
 
               <button 
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!isAuthenticated}
                 onClick={async () => {
-                  if (!isAuthenticated) return;
+                  if (!isAuthenticated) {
+                    alert('Please connect your wallet first!');
+                    return;
+                  }
+                  
                   const input = document.getElementById('postMessageInput') as HTMLTextAreaElement | null;
                   const value: string = input && 'value' in input ? (input.value as string) : '';
-                  if (!value || value.length === 0) return;
-                  await openContractCall({
-                    network: new StacksMainnet(),
-                    anchorMode: 1,
-                    contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-                    contractName: POST_MESSAGE_CONTRACT_NAME,
-                    functionName: 'post-message',
-                    functionArgs: [
-                      (await import('@stacks/transactions')).stringAsciiCV(value)
-                    ],
-                    appDetails: {
-                      name: 'Stacks Click & Ship',
-                      icon: window.location.origin + '/vite.svg',
-                    },
-                    onFinish: (data) => {
-                      if (input) (input as HTMLTextAreaElement).value = '';
-                      const counter = document.getElementById('postMessageCounter');
-                      if (counter) counter.textContent = '280 characters left';
-                      // Odśwież statystyki po 5 sekundach
-                      setTimeout(() => fetchMessageCounts(), 5000);
-                      // Wyświetl niestandardowy popup z linkiem
-                      const txId = data?.txId;
-                      if (txId) {
-                        setTxPopup({ show: true, txId });
-                      }
-                    },
-                  });
+                  
+                  if (!value || value.length === 0) {
+                    alert('Please enter a message!');
+                    return;
+                  }
+                  
+                  // Check if message contains only ASCII characters
+                  const isAscii = /^[\x00-\x7F]*$/.test(value);
+                  if (!isAscii) {
+                    alert('Message can only contain ASCII characters (no emoji or special characters). Please remove non-ASCII characters.');
+                    return;
+                  }
+                  
+                  try {
+                    const { stringAsciiCV } = await import('@stacks/transactions');
+                    
+                    await openContractCall({
+                      network: new StacksMainnet(),
+                      anchorMode: 1,
+                      contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
+                      contractName: POST_MESSAGE_CONTRACT_NAME,
+                      functionName: 'post-message',
+                      functionArgs: [stringAsciiCV(value)],
+                      appDetails: {
+                        name: 'Stacks Click & Ship',
+                        icon: window.location.origin + '/vite.svg',
+                      },
+                      onFinish: (data) => {
+                        if (input) (input as HTMLTextAreaElement).value = '';
+                        const counter = document.getElementById('postMessageCounter');
+                        if (counter) counter.textContent = '280 characters left';
+                        // Odśwież statystyki po 5 sekundach
+                        setTimeout(() => fetchMessageCounts(), 5000);
+                        // Wyświetl niestandardowy popup z linkiem
+                        const txId = data?.txId;
+                        if (txId) {
+                          setTxPopup({ show: true, txId });
+                        }
+                      },
+                      onCancel: () => {
+                        console.log('Transaction cancelled by user');
+                      },
+                    });
+                  } catch (error) {
+                    console.error('Error posting message:', error);
+                    alert('Error posting message: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                  }
                 }}
               >
                 📤 Post Message
