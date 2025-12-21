@@ -26,6 +26,15 @@ export default function StacksClickAndShip({
   connectWallet, 
   userSession 
 }: StacksClickAndShipProps) {
+
+  // Helper do pobierania opcji głosowania w dowolnym formacie
+  const getPollOptions = (poll: any) => {
+    if (Array.isArray(poll.options)) return poll.options;
+    if (poll.options?.value && Array.isArray(poll.options.value)) return poll.options.value;
+    if (poll.options?.data && Array.isArray(poll.options.data)) return poll.options.data;
+    return [];
+  };
+
   const location = useLocation();
 
   // Determine active tab from pathname
@@ -1212,83 +1221,85 @@ export default function StacksClickAndShip({
                       </div>
                     )}
 
-                    {/* Options to vote */}
+                    {/* Helper to get poll options in any format */}
+
+
                     {selectedPoll['is-active-calculated']?.value && isAuthenticated ? (
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">Cast your vote:</h4>
-                        {selectedPoll.options?.value?.map((option: any, index: number) => {
-                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
-                          const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
-                          const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
-                          const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
-                            ? Number(selectedPoll['total-votes'].value) 
-                            : selectedPoll['total-votes']?.value || 0;
-                          const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
-                          
-                          return (
-                            <button
-                              key={index}
-                              onClick={async () => {
-                                try {
-                                  const { uintCV } = await import('@stacks/transactions');
-                                  const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
-                                    ? Number(selectedPoll['poll-id'].value) 
-                                    : selectedPoll['poll-id']?.value;
-                                  
-                                  await openContractCall({
-                                    contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
-                                    contractName: 'votingv1',
-                                    functionName: 'cast-vote',
-                                    functionArgs: [uintCV(pollId), uintCV(index)],
-                                    network: new StacksMainnet(),
-                                    onFinish: (data: any) => {
-                                      console.log('Vote submitted:', data);
-                                      setTxPopup({ show: true, txId: data.txId });
-                                      setShowVoteModal(false);
-                                      setSelectedPoll(null);
-                                      // Odśwież głosowania po 5 sekundach
-                                      setTimeout(() => fetchPolls(), 5000);
-                                    },
-                                    onCancel: () => {
-                                      console.log('Vote cancelled');
-                                    },
-                                  });
-                                } catch (e) {
-                                  console.error('Vote error:', e);
-                                  alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
-                                }
-                              }}
-                              className="w-full text-left p-4 rounded-lg bg-orange-900/50 hover:bg-orange-800/70 border border-orange-500/30 hover:border-orange-500/50 transition-all"
-                            >
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-white font-medium">{optionText}</span>
-                                <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
-                              </div>
-                              <div className="w-full bg-orange-900/30 rounded-full h-2">
-                                <div 
-                                  className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
-                                  style={{ width: `${percentage}%` }}
-                                />
-                              </div>
-                            </button>
-                          );
-                        })}
+                        {(() => {
+                          console.log('🟠 selectedPoll:', selectedPoll);
+                          const options = getPollOptions(selectedPoll);
+                          console.log('🟠 getPollOptions(selectedPoll):', options);
+                          return options.map((option: any, index: number) => {
+                            const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
+                            const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
+                            const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                            const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
+                              ? Number(selectedPoll['total-votes'].value) 
+                              : selectedPoll['total-votes']?.value || 0;
+                            const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
+                            return (
+                              <button
+                                key={index}
+                                onClick={async () => {
+                                  try {
+                                    const { uintCV } = await import('@stacks/transactions');
+                                    const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
+                                      ? Number(selectedPoll['poll-id'].value) 
+                                      : selectedPoll['poll-id']?.value;
+                                    await openContractCall({
+                                      contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+                                      contractName: 'votingv1',
+                                      functionName: 'cast-vote',
+                                      functionArgs: [uintCV(pollId), uintCV(index)],
+                                      network: new StacksMainnet(),
+                                      onFinish: (data: any) => {
+                                        console.log('Vote submitted:', data);
+                                        setTxPopup({ show: true, txId: data.txId });
+                                        setShowVoteModal(false);
+                                        setSelectedPoll(null);
+                                        setTimeout(() => fetchPolls(), 5000);
+                                      },
+                                      onCancel: () => {
+                                        console.log('Vote cancelled');
+                                      },
+                                    });
+                                  } catch (e) {
+                                    console.error('Vote error:', e);
+                                    alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
+                                  }
+                                }}
+                                className="w-full text-left p-4 rounded-lg bg-orange-900/50 hover:bg-orange-800/70 border border-orange-500/30 hover:border-orange-500/50 transition-all"
+                              >
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-white font-medium">{optionText}</span>
+                                  <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
+                                </div>
+                                <div className="w-full bg-orange-900/30 rounded-full h-2">
+                                  <div 
+                                    className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full transition-all"
+                                    style={{ width: `${percentage}%` }}
+                                  />
+                                </div>
+                              </button>
+                            );
+                          });
+                        })()}
                       </div>
                     ) : (
-                      /* Results for ended polls or not authenticated */
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">
                           {selectedPoll['is-active-calculated']?.value ? 'Current Results:' : 'Final Results:'}
                         </h4>
-                        {selectedPoll.options?.value?.map((option: any, index: number) => {
-                          const optionText = option?.value || option?.data || `Option ${index + 1}`;
+                        {getPollOptions(selectedPoll).map((option: any, index: number) => {
+                          const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
                           const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
                           const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
                           const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
                             ? Number(selectedPoll['total-votes'].value) 
                             : selectedPoll['total-votes']?.value || 0;
                           const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
-                          
                           return (
                             <div key={index} className="p-4 rounded-lg bg-gray-800/50 border border-gray-600/30">
                               <div className="flex justify-between items-center mb-2">
