@@ -12,6 +12,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@reown/appkit": "^1.8.15",
+    "@reown/appkit-adapter-bitcoin": "^1.8.15",
     "@stacks/auth": "^6.13.0",
     "@stacks/connect": "^7.10.2",
     "@stacks/network": "^6.17.0",

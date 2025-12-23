@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AppConfig, UserSession, showConnect } from '@stacks/connect';
 import StacksClickAndShip from './components/StacksClickAndShip';
 import ArticlePage from './components/ArticlePage';
+import './config/appkit'; // Initialize AppKit
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
