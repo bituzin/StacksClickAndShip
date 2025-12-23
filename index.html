@@ -5,6 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StacksClickAndShip - GM, Deploy, Learn</title>
+    <script>
+      // Prevent EVM wallet extensions from breaking the app
+      (function() {
+        try {
+          const originalDefineProperty = Object.defineProperty;
+          Object.defineProperty = function(obj, prop, descriptor) {
+            if (prop === 'ethereum' && obj === window) {
+              console.warn('🛡️ Blocked ethereum property override from extension');
+              return obj;
+            }
+            return originalDefineProperty(obj, prop, descriptor);
+          };
+        } catch (e) {
+          console.warn('Could not override Object.defineProperty:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

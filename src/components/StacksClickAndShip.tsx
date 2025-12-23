@@ -6,10 +6,13 @@ import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transacti
 import { StacksMainnet } from '@stacks/network';
 
 // Import custom hooks
-import { usePolls, useUserVotingStats, useGMStats, useMessageStats } from '../hooks';
+import { usePolls, useUserVotingStats, useGMStats, useMessageStats, useWalletConnect } from '../hooks';
 
 // Import types
 import { StacksClickAndShipProps, TxPopup } from '../types';
+
+// Import components
+import { UniversalConnectModal } from './UniversalConnectModal';
 
 // Import constants
 import {
@@ -113,15 +116,158 @@ export default function StacksClickAndShip({
     fetchUserVotingStats
   } = useUserVotingStats(userAddress);
 
-  // Aktualizuj adres użytkownika gdy zmienia się autentykacja
-  React.useEffect(() => {
-    if (isAuthenticated && userSession.isUserSignedIn()) {
-      const userData = userSession.loadUserData();
-      setUserAddress(userData.profile.stxAddress.mainnet);
+  // WalletConnect hook
+  const {
+    isConnected: wcIsConnected,
+    isConnecting: wcIsConnecting,
+    uri: wcUri,
+    accounts: wcAccounts,
+    connect: wcConnect,
+    disconnect: wcDisconnect,
+    getAddresses: _wcGetAddresses,
+    transferStx: _wcTransferStx,
+    signTransaction: wcSignTransaction,
+    signMessage: _wcSignMessage,
+    callContract: _wcCallContract
+  } = useWalletConnect();
+
+  // Helper to call contract using appropriate wallet (Hiro/Xverse or WalletConnect)
+  const callContractUniversal = React.useCallback(async (
+    contractAddress: string,
+    contractName: string,
+    functionName: string,
+    functionArgs: any[],
+    onFinish?: (data: any) => void,
+    onCancel?: () => void
+  ) => {
+    const network = new StacksMainnet();
+
+    // If connected via WalletConnect, use WC API
+    if (wcIsConnected && userAddress) {
+      try {
+        const { 
+          makeUnsignedContractCall, 
+          broadcastTransaction, 
+          AnchorMode, 
+          PostConditionMode,
+          getNonce
+        } = await import('@stacks/transactions');
+        
+        console.log('🔗 Building unsigned transaction for WalletConnect...');
+        
+        // Get nonce for sender
+        const nonce = await getNonce(userAddress, network);
+        console.log('📊 Nonce for', userAddress, ':', nonce);
+        
+        // Build unsigned transaction
+        const txOptions = {
+          contractAddress,
+          contractName,
+          functionName,
+          functionArgs,
+          senderAddress: userAddress,
+          network,
+          anchorMode: AnchorMode.Any,
+          postConditionMode: PostConditionMode.Allow,
+          fee: 10000n,
+          nonce
+        };
+
+        // Create unsigned transaction
+        const unsignedTx = await makeUnsignedContractCall(txOptions);
+        
+        // Serialize for signing
+        const txHex = unsignedTx.serialize().toString('hex');
+        console.log('📝 Unsigned transaction serialized, requesting signature from WalletConnect...');
+        
+        // Sign with WalletConnect
+        const signedResult = await wcSignTransaction({
+          transaction: txHex,
+          broadcast: true, // Let WC broadcast
+          network: 'mainnet'
+        });
+
+        console.log('✅ Transaction signed and broadcast:', signedResult.txid);
+        
+        if (onFinish) {
+          onFinish({ txId: signedResult.txid });
+        }
+        
+        return signedResult;
+      } catch (error) {
+        console.error('WalletConnect transaction error:', error);
+        if (onCancel) onCancel();
+        throw error;
+      }
+    }
+    // Otherwise use Hiro/Xverse via @stacks/connect
+    else if (isAuthenticated) {
+      return openContractCall({
+        network,
+        anchorMode: 1,
+        contractAddress,
+        contractName,
+        functionName,
+        functionArgs,
+        appDetails: {
+          name: 'Stacks Click & Ship',
+          icon: window.location.origin + '/vite.svg',
+        },
+        onFinish,
+        onCancel
+      });
     } else {
+      throw new Error('No wallet connected');
+    }
+  }, [wcIsConnected, isAuthenticated, userAddress, wcSignTransaction]);
+
+  // Debug logging for WalletConnect state
+  React.useEffect(() => {
+    console.log('🔍 WalletConnect hook state:', {
+      wcIsConnected,
+      wcIsConnecting,
+      wcAccounts,
+      wcUri: wcUri ? 'present' : 'empty'
+    });
+  }, [wcIsConnected, wcIsConnecting, wcAccounts, wcUri]);
+
+  // Universal connect modal state
+  const [showConnectModal, setShowConnectModal] = React.useState(false);
+
+  // Close connect modal when user connects
+  React.useEffect(() => {
+    if (isAuthenticated || wcIsConnected) {
+      setShowConnectModal(false);
+    }
+  }, [isAuthenticated, wcIsConnected]);
+
+  // Unified effect for managing userAddress from all sources
+  React.useEffect(() => {
+    console.log('🔗 Connection state:', { isAuthenticated, wcIsConnected, wcAccounts: wcAccounts.length });
+    
+    // Priority 1: WalletConnect (if connected)
+    if (wcIsConnected && wcAccounts.length > 0) {
+      const address = wcAccounts[0].split(':').pop();
+      console.log('📱 Setting userAddress from WalletConnect:', address);
+      if (address && address !== userAddress) {
+        setUserAddress(address);
+      }
+    }
+    // Priority 2: Hiro/Xverse (if authenticated)
+    else if (isAuthenticated && userSession.isUserSignedIn()) {
+      const userData = userSession.loadUserData();
+      const address = userData.profile.stxAddress.mainnet;
+      console.log('👛 Setting userAddress from Hiro/Xverse:', address);
+      if (address !== userAddress) {
+        setUserAddress(address);
+      }
+    }
+    // Not connected at all
+    else if (!wcIsConnected && !isAuthenticated && userAddress !== null) {
+      console.log('❌ Not connected - clearing userAddress');
       setUserAddress(null);
     }
-  }, [isAuthenticated, userSession]);
+  }, [isAuthenticated, wcIsConnected, wcAccounts, userSession]);
 
   // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
   React.useEffect(() => {
@@ -215,32 +361,44 @@ export default function StacksClickAndShip({
   }, [userAddress, fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls, fetchUserVotingStats]);
 
   async function handleSayGM() {
-    if (!isAuthenticated) return;
-    await openContractCall({
-      network: new StacksMainnet(),
-      anchorMode: 1,
-      contractAddress: GMOK_CONTRACT_ADDRESS,
-      contractName: GMOK_CONTRACT_NAME,
-      functionName: 'say-gm',
-      functionArgs: [],
-      appDetails: {
-        name: 'Stacks Click & Ship',
-        icon: window.location.origin + '/vite.svg',
-      },
-      onFinish: (data) => {
+    if (!(isAuthenticated || wcIsConnected)) return;
+    
+    await callContractUniversal(
+      GMOK_CONTRACT_ADDRESS,
+      GMOK_CONTRACT_NAME,
+      'say-gm',
+      [],
+      (data) => {
         // Odśwież statystyki po 5 sekundach (dać czas na potwierdzenie transakcji)
         setTimeout(() => fetchGmCounts(), 5000);
         const txId = data?.txId;
         if (txId) {
           setTxPopup({ show: true, txId });
         }
-      },
-    });
+      }
+    );
   }
 
   const handleDisconnect = () => {
     userSession.signUserOut();
     window.location.reload();
+  };
+
+  // Handler for Xverse extension connection
+  const handleConnectXverseExtension = async () => {
+    try {
+      // Xverse extension uses similar API to Hiro
+      if ((window as any).XverseProviders?.StacksProvider) {
+        await (window as any).XverseProviders.StacksProvider.request('connect');
+        // After connection, the address will be available
+        const userData = await (window as any).XverseProviders.StacksProvider.getAddresses();
+        if (userData?.addresses?.length > 0) {
+          setUserAddress(userData.addresses[0].address);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect Xverse extension:', error);
+    }
   };
 
   const addVoteOption = () => {
@@ -384,7 +542,7 @@ export default function StacksClickAndShip({
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
           </div>
-          {isAuthenticated ? (
+          {(isAuthenticated || wcIsConnected) ? (
             <div className="flex items-center gap-3">
               <div className="text-orange-400 text-sm">
                 Connected:
@@ -401,7 +559,19 @@ export default function StacksClickAndShip({
                 )}
               </div>
               <button
-                onClick={handleDisconnect}
+                onClick={async () => {
+                  try {
+                    if (wcIsConnected) {
+                      await wcDisconnect();
+                    }
+                    if (isAuthenticated) {
+                      handleDisconnect();
+                    }
+                    setUserAddress(null);
+                  } catch (error) {
+                    console.error('Failed to disconnect:', error);
+                  }
+                }}
                 className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
               >
                 Disconnect
@@ -409,7 +579,7 @@ export default function StacksClickAndShip({
             </div>
           ) : (
             <button
-              onClick={connectWallet}
+              onClick={() => setShowConnectModal(true)}
               className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               Connect Wallet
@@ -520,8 +690,8 @@ export default function StacksClickAndShip({
               </div>
 
               <button 
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
-                disabled={!isAuthenticated}
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!(isAuthenticated || wcIsConnected)}
                 onClick={handleSayGM}
               >
                 ☀️ Say GM
@@ -642,9 +812,9 @@ export default function StacksClickAndShip({
 
               <button 
                 className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!isAuthenticated}
+                disabled={!(isAuthenticated || wcIsConnected)}
                 onClick={async () => {
-                  if (!isAuthenticated) {
+                  if (!(isAuthenticated || wcIsConnected)) {
                     alert('Please connect your wallet first!');
                     return;
                   }
@@ -667,18 +837,12 @@ export default function StacksClickAndShip({
                   try {
                     const { stringAsciiCV } = await import('@stacks/transactions');
                     
-                    await openContractCall({
-                      network: new StacksMainnet(),
-                      anchorMode: 1,
-                      contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
-                      contractName: POST_MESSAGE_CONTRACT_NAME,
-                      functionName: 'post-message',
-                      functionArgs: [stringAsciiCV(value)],
-                      appDetails: {
-                        name: 'Stacks Click & Ship',
-                        icon: window.location.origin + '/vite.svg',
-                      },
-                      onFinish: (data) => {
+                    await callContractUniversal(
+                      POST_MESSAGE_CONTRACT_ADDRESS,
+                      POST_MESSAGE_CONTRACT_NAME,
+                      'post-message',
+                      [stringAsciiCV(value)],
+                      (data) => {
                         if (input) (input as HTMLTextAreaElement).value = '';
                         const counter = document.getElementById('postMessageCounter');
                         if (counter) counter.textContent = '280 characters left';
@@ -690,10 +854,10 @@ export default function StacksClickAndShip({
                           setTxPopup({ show: true, txId });
                         }
                       },
-                      onCancel: () => {
+                      () => {
                         console.log('Transaction cancelled by user');
-                      },
-                    });
+                      }
+                    );
                   } catch (error) {
                     console.error('Error posting message:', error);
                     alert('Error posting message: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -1248,23 +1412,23 @@ export default function StacksClickAndShip({
                                     const pollId = typeof selectedPoll['poll-id']?.value === 'bigint' 
                                       ? Number(selectedPoll['poll-id'].value) 
                                       : selectedPoll['poll-id']?.value;
-                                    await openContractCall({
-                                      contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
-                                      contractName: 'votingv1',
-                                      functionName: 'cast-vote',
-                                      functionArgs: [uintCV(pollId), uintCV(index)],
-                                      network: new StacksMainnet(),
-                                      onFinish: (data: any) => {
+                                    
+                                    await callContractUniversal(
+                                      'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+                                      'votingv1',
+                                      'cast-vote',
+                                      [uintCV(pollId), uintCV(index)],
+                                      (data: any) => {
                                         console.log('Vote submitted:', data);
                                         setTxPopup({ show: true, txId: data.txId });
                                         setShowVoteModal(false);
                                         setSelectedPoll(null);
                                         setTimeout(() => fetchPolls(), 5000);
                                       },
-                                      onCancel: () => {
+                                      () => {
                                         console.log('Vote cancelled');
-                                      },
-                                    });
+                                      }
+                                    );
                                   } catch (e) {
                                     console.error('Vote error:', e);
                                     alert('Error casting vote: ' + (e instanceof Error ? e.message : String(e)));
@@ -1577,6 +1741,21 @@ export default function StacksClickAndShip({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Universal Connect Modal */}
+      {showConnectModal && (
+        <UniversalConnectModal
+          onClose={() => setShowConnectModal(false)}
+          onConnectHiro={connectWallet}
+          onConnectXverseExtension={handleConnectXverseExtension}
+          onConnectWalletConnect={async () => { 
+            await wcConnect(); 
+            return;
+          }}
+          wcUri={wcUri}
+          wcIsConnecting={wcIsConnecting}
+        />
       )}
     </div>
   );
