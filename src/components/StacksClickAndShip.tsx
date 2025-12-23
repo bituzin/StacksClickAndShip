@@ -422,13 +422,13 @@ export default function StacksClickAndShip({
                 onClick={connectWallet}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Wallet (Hiro/Xverse)
+                Connect Stack/Btc Wallet
               </button>
               <button
                 onClick={() => open()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                🪙 Bitcoin Wallet (AppKit)
+                Connect Btc Wallet
               </button>
             </div>
           )}
@@ -498,24 +498,7 @@ export default function StacksClickAndShip({
                 </Link>
               </div>
 
-              <div className="mt-8 text-center">
-                {!isAuthenticated && (
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <button 
-                      onClick={connectWallet}
-                      className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white py-3 px-8 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                    >
-                      Connect Wallet (Hiro/Xverse)
-                    </button>
-                    <button 
-                      onClick={() => open()}
-                      className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-3 px-8 rounded-full transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                    >
-                      🌐 AppKit (Multi-Chain)
-                    </button>
-                  </div>
-                )}
-              </div>
+
             </div>
           </div>
         )}
@@ -1249,7 +1232,7 @@ export default function StacksClickAndShip({
                     {/* Helper to get poll options in any format */}
 
 
-                    {selectedPoll['is-active-calculated']?.value && isAuthenticated ? (
+                    {selectedPoll['is-active-calculated']?.value ? (
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">Cast your vote:</h4>
                         {(() => {
