@@ -1,24 +1,19 @@
 import { createAppKit } from '@reown/appkit/react';
 import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
+import { bitcoin, bitcoinTestnet } from '@reown/appkit/networks';
 
 // 1. Get projectId from https://cloud.reown.com
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'c12e4a814a2dd9dcb0dd714c65a86c62';
 
-// 2. Set up Bitcoin Adapter
-const bitcoinAdapter = new BitcoinAdapter();
+// 2. Set up Bitcoin networks - AppKit provides official network definitions
+const networks = [bitcoin, bitcoinTestnet];
 
-// 3. Define networks manually for Bitcoin
-const networks = [
-  {
-    id: 'bitcoin',
-    name: 'Bitcoin',
-    currency: 'BTC',
-    explorerUrl: 'https://blockstream.info',
-    rpcUrl: 'https://blockstream.info/api'
-  }
-];
+// 3. Set up Bitcoin Adapter with proper configuration
+const bitcoinAdapter = new BitcoinAdapter({
+  networks
+});
 
-// 4. Create the modal
+// 4. Create the modal metadata
 const metadata = {
   name: 'Stacks Click & Ship',
   description: 'GM, post, vote, learn - Your all-in-one toolkit for the Stacks blockchain',
@@ -26,6 +21,7 @@ const metadata = {
   icons: [window.location.origin + '/vite.svg']
 };
 
+// 5. Create AppKit with Bitcoin support
 export const modal = createAppKit({
   adapters: [bitcoinAdapter],
   networks: networks as any,
@@ -33,7 +29,7 @@ export const modal = createAppKit({
   metadata,
   features: {
     analytics: true,
-    email: false, // Disable email login for now
+    email: false,
     socials: [],
     swaps: false,
     onramp: false

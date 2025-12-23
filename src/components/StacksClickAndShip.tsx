@@ -426,9 +426,9 @@ export default function StacksClickAndShip({
               </button>
               <button
                 onClick={() => open()}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                🌐 AppKit (Multi-Chain)
+                🪙 Bitcoin Wallet (AppKit)
               </button>
             </div>
           )}

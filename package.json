@@ -21,6 +21,7 @@
     "@stacks/transactions": "^6.17.0",
     "@walletconnect/sign-client": "^2.23.1",
     "@walletconnect/types": "^2.23.1",
+    "@walletconnect/universal-provider": "^2.23.1",
     "@walletconnect/utils": "^2.23.1",
     "lucide-react": "^0.294.0",
     "qrcode.react": "^4.2.0",

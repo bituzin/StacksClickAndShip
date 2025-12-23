@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AppConfig, UserSession, showConnect } from '@stacks/connect';
 import StacksClickAndShip from './components/StacksClickAndShip';
