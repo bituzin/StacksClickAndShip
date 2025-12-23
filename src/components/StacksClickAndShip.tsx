@@ -147,7 +147,6 @@ export default function StacksClickAndShip({
       try {
         const { 
           makeUnsignedContractCall, 
-          broadcastTransaction, 
           AnchorMode, 
           PostConditionMode,
           getNonce
@@ -169,8 +168,8 @@ export default function StacksClickAndShip({
           network,
           anchorMode: AnchorMode.Any,
           postConditionMode: PostConditionMode.Allow,
-          fee: 10000n,
-          nonce
+          fee: 10000,
+          nonce: Number(nonce)
         };
 
         // Create unsigned transaction
