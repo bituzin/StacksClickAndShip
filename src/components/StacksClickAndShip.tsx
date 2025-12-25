@@ -29,9 +29,15 @@ export default function StacksClickAndShip({
 }: StacksClickAndShipProps) {
   
   // AppKit hook for Web3Modal
-  const { open } = useAppKit();
+  const { open, close } = useAppKit();
   const { address: appKitAddress } = useAppKitAccount();
   const OPTION_SLOTS = 10;
+  const APPKIT_STORAGE_KEY = 'appkitAddress';
+
+  const formatAddress = (address?: string | null) => {
+    if (!address) return '';
+    return address.length > 16 ? `${address.slice(0, 8)}...${address.slice(-6)}` : address;
+  };
 
   const toPlainString = (value: any): string => {
     if (typeof value === 'string') {
@@ -163,8 +169,10 @@ export default function StacksClickAndShip({
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
+
   // User address state
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
+  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
   
   // Transaction popup state
   const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
@@ -218,10 +226,16 @@ export default function StacksClickAndShip({
   } = usePolls(userAddress);
 
   const {
+    userPollsCreated,
     userPollsVoted,
     userTotalVotesCast,
     fetchUserVotingStats
   } = useUserVotingStats(userAddress);
+
+  const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
+
+  const isWalletConnectedViaHiro = Boolean(isAuthenticated && userAddress);
+  const isWalletConnectedViaAppKit = Boolean(!isWalletConnectedViaHiro && effectiveAppKitAddress);
 
   // User address management (Hiro/Xverse and WalletConnect/Leather)
   React.useEffect(() => {
@@ -232,17 +246,17 @@ export default function StacksClickAndShip({
       if (address !== userAddress) {
         setUserAddress(address);
       }
-    } else if (appKitAddress) {
+    } else if (effectiveAppKitAddress) {
       // Ustaw userAddress z WalletConnect/Leather jeśli dostępny
-      if (appKitAddress !== userAddress) {
-        console.log('👛 Setting userAddress from AppKit/WalletConnect:', appKitAddress);
-        setUserAddress(appKitAddress);
+      if (effectiveAppKitAddress !== userAddress) {
+        console.log('👛 Setting userAddress from AppKit/WalletConnect:', effectiveAppKitAddress);
+        setUserAddress(effectiveAppKitAddress);
       }
-    } else if (!isAuthenticated && !appKitAddress && userAddress !== null) {
+    } else if (!isAuthenticated && !effectiveAppKitAddress && userAddress !== null) {
       console.log('❌ Not connected - clearing userAddress');
       setUserAddress(null);
     }
-  }, [isAuthenticated, userSession, appKitAddress]);
+  }, [effectiveAppKitAddress, isAuthenticated, userAddress, userSession]);
 
   // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
   React.useEffect(() => {
@@ -365,20 +379,39 @@ export default function StacksClickAndShip({
   };
 
   React.useEffect(() => {
-    // Upewnij się, że userAddress jest ustawiony
-    if (!userAddress) return;
+    close();
+    if (typeof window === 'undefined') return;
+    const savedAddress = window.localStorage.getItem(APPKIT_STORAGE_KEY);
+    if (savedAddress) {
+      setPersistedAppKitAddress(savedAddress);
+    }
+  }, [close]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (appKitAddress) {
+      window.localStorage.setItem(APPKIT_STORAGE_KEY, appKitAddress);
+      setPersistedAppKitAddress(appKitAddress);
+    } else {
+      const storedAddress = window.localStorage.getItem(APPKIT_STORAGE_KEY);
+      if (!storedAddress) {
+        setPersistedAppKitAddress(null);
+      }
+    }
+  }, [appKitAddress]);
+
+  React.useEffect(() => {
     fetchGmCounts();
     fetchLastGmAndLeaderboard();
     fetchMessageCounts();
     fetchPolls();
     fetchUserVotingStats();
-    // Auto-refresh co minutę
     const interval = setInterval(() => {
       fetchPolls();
       fetchUserVotingStats();
     }, 60000);
     return () => clearInterval(interval);
-  }, [userAddress, fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls, fetchUserVotingStats]);
+  }, [fetchGmCounts, fetchLastGmAndLeaderboard, fetchMessageCounts, fetchPolls, fetchUserVotingStats]);
 
   async function handleSayGM() {
     if (!isAuthenticated) return;
@@ -408,6 +441,24 @@ export default function StacksClickAndShip({
     userSession.signUserOut();
     window.location.reload();
   };
+
+  const handleAppKitDisconnect = React.useCallback(async () => {
+    try {
+      const module = await import('../config/appkit');
+      await module.modal.disconnect('bip122');
+    } catch (error) {
+      console.error('Error disconnecting AppKit wallet:', error);
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(APPKIT_STORAGE_KEY);
+      }
+      setPersistedAppKitAddress(null);
+      if (!isAuthenticated) {
+        setUserAddress(null);
+      }
+      close();
+    }
+  }, [close, isAuthenticated]);
 
   const addVoteOption = () => {
     if (voteOptions.length < 10) {
@@ -550,25 +601,40 @@ export default function StacksClickAndShip({
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
           </div>
-          {isAuthenticated ? (
+          {isWalletConnectedViaHiro ? (
             <div className="flex items-center gap-3">
-              <div className="text-orange-400 text-sm">
-                Connected:
-                {userAddress && (
-                  <a
-                    href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-orange-300 ml-1 font-mono"
-                    title={userAddress}
-                  >
-                    {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
-                  </a>
-                )}
-              </div>
+              <span className="text-orange-300 text-sm font-semibold">Connected</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (userAddress) {
+                    window.open(`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`, '_blank');
+                  }
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
+              >
+                {formatAddress(userAddress)}
+              </button>
               <button
                 onClick={handleDisconnect}
                 className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : isWalletConnectedViaAppKit ? (
+            <div className="flex items-center gap-3">
+              <span className="text-orange-300 text-sm font-semibold">Connected</span>
+              <button
+                type="button"
+                onClick={() => open()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
+              >
+                {formatAddress(effectiveAppKitAddress)}
+              </button>
+              <button
+                onClick={handleAppKitDisconnect}
+                className="bg-blue-600/50 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
               >
                 Disconnect
               </button>
@@ -585,11 +651,7 @@ export default function StacksClickAndShip({
                 onClick={() => open()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                {appKitAddress
-                  ? (appKitAddress.length > 16
-                      ? `${appKitAddress.slice(0, 8)}...${appKitAddress.slice(-6)}`
-                      : appKitAddress)
-                  : 'Connect Btc Wallet'}
+                Connect Btc Wallet
               </button>
             </div>
           )}
@@ -940,26 +1002,7 @@ export default function StacksClickAndShip({
                     <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
                       <div className="text-orange-300 text-sm mb-1">Polls Created</div>
                       <div className="text-3xl font-bold text-white">
-                        {(() => {
-                          console.log('📊 Calculating user stats:');
-                          console.log('  - User address:', userAddress);
-                          console.log('  - Active polls:', activePolls.length);
-                          console.log('  - Closed polls:', closedPolls.length);
-                          
-                          const created = [...activePolls, ...closedPolls].filter(poll => {
-                            // creator jest principal w Clarity - może być w różnych formatach
-                            const creatorAddress = extractString(poll.creator);
-                            
-                            console.log(`  - Poll creator: "${creatorAddress}" vs user: "${userAddress}"`);
-                            console.log(`  - Poll creator object:`, poll.creator);
-                            console.log(`  - Match:`, creatorAddress === userAddress);
-                            
-                            return creatorAddress === userAddress;
-                          });
-                          
-                          console.log('  - Created by user:', created.length);
-                          return created.length;
-                        })()}
+                        {userPollsCreated}
                       </div>
                     </div>
                     <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">

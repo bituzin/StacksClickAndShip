@@ -5,11 +5,13 @@ import { VOTING_CONTRACT_ADDRESS, VOTING_CONTRACT_NAME } from '../constants/cont
 import { parseValue } from '../utils/blockchain';
 
 export function useUserVotingStats(userAddress: string | null) {
+  const [userPollsCreated, setUserPollsCreated] = React.useState<number>(0);
   const [userPollsVoted, setUserPollsVoted] = React.useState<number>(0);
   const [userTotalVotesCast, setUserTotalVotesCast] = React.useState<number>(0);
 
   const fetchUserVotingStats = React.useCallback(async () => {
     if (!userAddress) {
+      setUserPollsCreated(0);
       setUserPollsVoted(0);
       setUserTotalVotesCast(0);
       return;
@@ -34,24 +36,28 @@ export function useUserVotingStats(userAddress: string | null) {
       console.log('📊 Parsed stats:', stats);
       
       if (stats) {
+        const created = parseValue(stats['polls-created']?.value);
         const voted = parseValue(stats['polls-voted']?.value);
         const votesCast = parseValue(stats['total-votes-cast']?.value);
         
-        console.log('✅ User stats - Polls voted:', voted, 'Total votes cast:', votesCast);
+        console.log('✅ User stats - Created:', created, 'Polls voted:', voted, 'Total votes cast:', votesCast);
         
+        setUserPollsCreated(created);
         setUserPollsVoted(voted);
         setUserTotalVotesCast(votesCast);
       } else {
         console.log('⚠️ Brak statystyk użytkownika');
+        setUserPollsCreated(0);
         setUserPollsVoted(0);
         setUserTotalVotesCast(0);
       }
     } catch (e) {
       console.error('❌ Błąd pobierania statystyk głosowań użytkownika:', e);
+      setUserPollsCreated(0);
       setUserPollsVoted(0);
       setUserTotalVotesCast(0);
     }
   }, [userAddress]);
 
-  return { userPollsVoted, userTotalVotesCast, fetchUserVotingStats };
+  return { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats };
 }
