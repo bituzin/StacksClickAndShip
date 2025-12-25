@@ -4,7 +4,7 @@ import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X, User } 
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
-import { useAppKit } from '@reown/appkit/react';
+import { useAppKit, useWalletInfo, useAppKitAccount } from '@reown/appkit/react';
 
 // Import custom hooks
 import { usePolls, useUserVotingStats, useGMStats, useMessageStats } from '../hooks';
@@ -30,6 +30,10 @@ export default function StacksClickAndShip({
   
   // AppKit hook for Web3Modal
   const { open } = useAppKit();
+  // Pobierz info o portfelu BTC (bip122)
+  const { walletInfo: btcWalletInfo } = useWalletInfo('bip122');
+  // Pobierz adres z AppKit
+  const { address: appKitAddress } = useAppKitAccount();
 
   // Helper do pobierania opcji głosowania w dowolnym formacie
   const getPollOptions = (poll: any) => {
@@ -117,7 +121,7 @@ export default function StacksClickAndShip({
     fetchUserVotingStats
   } = useUserVotingStats(userAddress);
 
-  // User address management
+  // User address management (Hiro/Xverse and WalletConnect/Leather)
   React.useEffect(() => {
     if (isAuthenticated && userSession.isUserSignedIn()) {
       const userData = userSession.loadUserData();
@@ -126,11 +130,17 @@ export default function StacksClickAndShip({
       if (address !== userAddress) {
         setUserAddress(address);
       }
-    } else if (!isAuthenticated && userAddress !== null) {
+    } else if (appKitAddress) {
+      // Ustaw userAddress z WalletConnect/Leather jeśli dostępny
+      if (appKitAddress !== userAddress) {
+        console.log('👛 Setting userAddress from AppKit/WalletConnect:', appKitAddress);
+        setUserAddress(appKitAddress);
+      }
+    } else if (!isAuthenticated && !appKitAddress && userAddress !== null) {
       console.log('❌ Not connected - clearing userAddress');
       setUserAddress(null);
     }
-  }, [isAuthenticated, userSession]);
+  }, [isAuthenticated, userSession, appKitAddress]);
 
   // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
   React.useEffect(() => {
@@ -428,7 +438,11 @@ export default function StacksClickAndShip({
                 onClick={() => open()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Btc Wallet
+                {appKitAddress
+                  ? (appKitAddress.length > 16
+                      ? `${appKitAddress.slice(0, 8)}...${appKitAddress.slice(-6)}`
+                      : appKitAddress)
+                  : 'Connect Btc Wallet'}
               </button>
             </div>
           )}
