@@ -206,7 +206,7 @@ export default function StacksClickAndShip({
     todayMessages,
     totalMessages,
     userMessages,
-    recentMessages,
+    messageLeaderboard,
     fetchMessageCounts
   } = useMessageStats(userAddress, isAuthenticated);
 
@@ -873,7 +873,6 @@ export default function StacksClickAndShip({
               </button>
 
 
-              {/* Leaderboard - Top 3 users by message count (styled like GM leaderboard) */}
               <div className="mt-8">
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <span className="mr-2">📊</span> Leaderboard
@@ -881,70 +880,34 @@ export default function StacksClickAndShip({
                 <div className="overflow-x-auto">
                   <table className="min-w-full bg-orange-900/40 rounded-lg">
                     <tbody>
-                      {(() => {
-                        // Zlicz liczbę wiadomości dla każdego adresu
-                        const counts: Record<string, number> = {};
-                        recentMessages.forEach(msg => {
-                          const addr = cvToString(msg.sender);
-                          if (addr) counts[addr] = (counts[addr] || 0) + 1;
-                        });
-                        // Posortuj malejąco po liczbie wiadomości
-                        const sorted: [string, number][] = Object.entries(counts)
-                          .sort((a, b) => (b[1] as number) - (a[1] as number))
-                          .slice(0, 3) as [string, number][];
-                        if (sorted.length === 0) {
-                          return (
-                            <tr>
-                              <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
-                            </tr>
-                          );
-                        }
-                        return sorted.map(([addr, count], idx) => (
-                          <tr key={addr} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                      {messageLeaderboard.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="text-orange-300 px-4 py-3 text-center">No data.</td>
+                        </tr>
+                      ) : (
+                        messageLeaderboard.map((entry, idx) => (
+                          <tr key={entry.user} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
                             <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
                             <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
                               <a
-                                href={`https://explorer.stacks.co/address/${addr}?chain=mainnet`}
+                                href={`https://explorer.stacks.co/address/${entry.user}?chain=mainnet`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:underline text-orange-300"
-                                title={addr}
+                                title={entry.user}
                               >
-                                {addr.length > 16 ? `${addr.slice(0, 8)}...${addr.slice(-6)}` : addr}
+                                {entry.user.length > 16 ? `${entry.user.slice(0, 8)}...${entry.user.slice(-6)}` : entry.user}
                               </a>
                             </td>
-                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{count} MSG</td>
+                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{entry.count} MSG</td>
                           </tr>
-                        ));
-                      })()}
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* Statystyki użytkownika - głosowania */}
-              {isAuthenticated && userAddress && (
-                <div className="mt-8 bg-gradient-to-br from-orange-900/40 to-purple-900/40 rounded-xl p-6 border border-orange-500/30">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                    <User className="mr-2 text-orange-400" size={24} />
-                    Your Voting Activity
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
-                      <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
-                      <div className="text-3xl font-bold text-white">
-                        {userPollsVoted}
-                      </div>
-                    </div>
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
-                      <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
-                      <div className="text-3xl font-bold text-white">
-                        {userTotalVotesCast}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -1419,7 +1382,7 @@ export default function StacksClickAndShip({
                                     await openContractCall({
                                       contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
                                       contractName: 'votingv1',
-                                      functionName: 'cast-vote',
+                                      functionName: 'vote',
                                       functionArgs: [uintCV(pollId), uintCV(optionIndex)],
                                       network: new StacksMainnet(),
                                       onFinish: (data: any) => {

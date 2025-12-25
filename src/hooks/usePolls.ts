@@ -6,6 +6,7 @@ import { Poll } from '../types';
 import { fetchCurrentBlock, parseValue } from '../utils/blockchain';
 
 const OPTION_SLOTS = 10;
+const DEFAULT_SENDER = 'SP000000000000000000002Q6VF78';
 
 const normalizeOptionString = (value: any): string => {
   if (typeof value === 'string') {
@@ -72,7 +73,7 @@ export function usePolls(userAddress: string | null) {
   const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
 
   const fetchPolls = React.useCallback(async () => {
-    if (!userAddress) return;
+    const senderAddress = userAddress || DEFAULT_SENDER;
     
     try {
       setIsLoadingPolls(true);
@@ -88,7 +89,7 @@ export function usePolls(userAddress: string | null) {
         functionName: 'get-global-stats',
         functionArgs: [],
         network: new StacksMainnet(),
-        senderAddress: userAddress,
+        senderAddress,
       });
       
       const stats = (statsRes as any).value?.data;
@@ -113,7 +114,7 @@ export function usePolls(userAddress: string | null) {
             functionName: 'get-poll-full-details',
             functionArgs: [uintCV(i)],
             network: new StacksMainnet(),
-            senderAddress: userAddress,
+            senderAddress,
           }).catch(err => {
             console.error(`❌ Błąd pobierania głosowania #${i}:`, err);
             return null;
