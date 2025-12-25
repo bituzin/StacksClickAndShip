@@ -28,40 +28,9 @@ export default function StacksClickAndShip({
   userSession 
 }: StacksClickAndShipProps) {
   
-  // AppKit hook for Web3Modal (dla Bitcoin)
+  // AppKit hook for Web3Modal
   const { open } = useAppKit();
-  // Pobierz adres Bitcoin z AppKit - NIE używaj tego jako userAddress dla Stacks!
-  const { address: bitcoinAddress, isConnected: isBitcoinConnected, caipAddress } = useAppKitAccount();
-  
-  // Zapobiegaj automatycznemu łączeniu Leather przy odświeżeniu strony
-  const [hasInitialized, setHasInitialized] = React.useState(false);
-  
-  React.useEffect(() => {
-    // Po pierwszym renderze oznacz jako zainicjalizowane
-    if (!hasInitialized) {
-      // Sprawdź czy Leather próbuje się automatycznie połączyć
-      const checkLeatherAutoConnect = async () => {
-        try {
-          // Jeśli wykryto połączenie Leather w pierwszej sekundzie, to była automatyczna synchronizacja
-          const leatherConnectorKey = Object.keys(localStorage).find(key => 
-            key.includes('LeatherProvider') || key.includes('leather')
-          );
-          
-          if (leatherConnectorKey && isBitcoinConnected && !hasInitialized) {
-            console.log('⚠️ Detected Leather auto-connect on page refresh. This is expected behavior.');
-            console.log('ℹ️ To disconnect Leather, click the "Disconnect BTC" button.');
-          }
-        } catch (e) {
-          console.error('Error checking Leather connection:', e);
-        }
-      };
-      
-      setTimeout(() => {
-        checkLeatherAutoConnect();
-        setHasInitialized(true);
-      }, 1000);
-    }
-  }, [isBitcoinConnected, hasInitialized]);
+  const { address: appKitAddress } = useAppKitAccount();
 
   // Helper do pobierania opcji głosowania w dowolnym formacie
   const getPollOptions = (poll: any) => {
@@ -103,6 +72,8 @@ export default function StacksClickAndShip({
   const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
   const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
   const [showTakenPopup, setShowTakenPopup] = React.useState(false);
+  const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
+  const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Vote states
   const [showCreateVoteModal, setShowCreateVoteModal] = React.useState(false);
@@ -149,21 +120,26 @@ export default function StacksClickAndShip({
     fetchUserVotingStats
   } = useUserVotingStats(userAddress);
 
-  // User address management - TYLKO dla portfeli Stacks (Hiro/Xverse)
+  // User address management (Hiro/Xverse and WalletConnect/Leather)
   React.useEffect(() => {
     if (isAuthenticated && userSession.isUserSignedIn()) {
       const userData = userSession.loadUserData();
       const address = userData.profile.stxAddress.mainnet;
-      console.log('👛 Setting userAddress from Stacks wallet (Hiro/Xverse):', address);
+      console.log('👛 Setting userAddress from Hiro/Xverse:', address);
       if (address !== userAddress) {
         setUserAddress(address);
       }
-    } else if (!isAuthenticated && userAddress !== null) {
-      // Czyść userAddress tylko gdy Stacks wallet jest rozłączony
-      console.log('❌ Stacks wallet disconnected - clearing userAddress');
+    } else if (appKitAddress) {
+      // Ustaw userAddress z WalletConnect/Leather jeśli dostępny
+      if (appKitAddress !== userAddress) {
+        console.log('👛 Setting userAddress from AppKit/WalletConnect:', appKitAddress);
+        setUserAddress(appKitAddress);
+      }
+    } else if (!isAuthenticated && !appKitAddress && userAddress !== null) {
+      console.log('❌ Not connected - clearing userAddress');
       setUserAddress(null);
     }
-  }, [isAuthenticated, userSession]);
+  }, [isAuthenticated, userSession, appKitAddress]);
 
   // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
   React.useEffect(() => {
@@ -183,13 +159,19 @@ export default function StacksClickAndShip({
   }, [isAuthenticated, userAddress, userSession]);
 
   // Funkcja do sprawdzania nazwy użytkownika (wydzielona, żeby można było wywoływać wielokrotnie)
-  const checkUserName = React.useCallback(async () => {
+  const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true;
+    if (!isSilent) {
+      setIsCheckingUsername(true);
+    }
     if (!isAuthenticated || !userAddress) {
       setCurrentUsername(null);
-      setIsCheckingUsername(false);
-      return;
+      if (!isSilent) {
+        setIsCheckingUsername(false);
+      }
+      return false;
     }
-    setIsCheckingUsername(true);
+    let hasName = false;
     try {
       const res = await callReadOnlyFunction({
         contractAddress: GET_NAME_CONTRACT_ADDRESS,
@@ -200,11 +182,11 @@ export default function StacksClickAndShip({
         senderAddress: userAddress,
       });
       console.log('Response from get-address-username:', res);
-      // Jeśli zwrócono some, użytkownik ma nazwę
-      if ((res as any).type === 10) { // some
+      if ((res as any).type === 10) {
         const username = cvToString((res as any).value);
         console.log('User has username:', username);
         setCurrentUsername(username);
+        hasName = true;
       } else {
         console.log('User has no username');
         setCurrentUsername(null);
@@ -213,9 +195,48 @@ export default function StacksClickAndShip({
       console.error('Error checking user name:', e);
       setCurrentUsername(null);
     } finally {
-      setIsCheckingUsername(false);
+      if (!isSilent) {
+        setIsCheckingUsername(false);
+      }
     }
+    return hasName;
   }, [isAuthenticated, userAddress]);
+
+  const stopUsernamePolling = React.useCallback(() => {
+    if (usernamePollTimeoutRef.current) {
+      clearTimeout(usernamePollTimeoutRef.current);
+      usernamePollTimeoutRef.current = null;
+    }
+    setIsConfirmingUsername(false);
+  }, []);
+
+  const startUsernamePolling = React.useCallback((expectedHasName: boolean) => {
+    if (!isAuthenticated || !userAddress) {
+      return;
+    }
+    stopUsernamePolling();
+    setIsConfirmingUsername(true);
+    const deadline = Date.now() + 120000;
+    const poll = async () => {
+      const hasName = await checkUserName({ silent: true });
+      if (hasName === expectedHasName) {
+        stopUsernamePolling();
+        return;
+      }
+      if (Date.now() >= deadline) {
+        stopUsernamePolling();
+        return;
+      }
+      usernamePollTimeoutRef.current = setTimeout(poll, 5000);
+    };
+    poll();
+  }, [checkUserName, isAuthenticated, stopUsernamePolling, userAddress]);
+
+  React.useEffect(() => {
+    return () => {
+      stopUsernamePolling();
+    };
+  }, [stopUsernamePolling]);
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
@@ -229,7 +250,6 @@ export default function StacksClickAndShip({
       checkUserName();
     }
   }, [activeTab, checkUserName]);
-  
 
   // Helper function to extract string from Clarity value
   const extractString = (value: any): string => {
@@ -282,25 +302,8 @@ export default function StacksClickAndShip({
   }
 
   const handleDisconnect = () => {
-    // Rozłącz tylko Stacks wallet - NIE odświeżaj strony
-    if (isAuthenticated && userSession.isUserSignedIn()) {
-      userSession.signUserOut();
-    }
-    setUserAddress(null);
-  };
-  
-  const handleDisconnectBitcoin = async () => {
-    // Otwórz AppKit modal Account aby użytkownik mógł się rozłączyć
-    try {
-      console.log('🔌 Opening Account modal to disconnect...');
-      open({ view: 'Account' });
-    } catch (e) {
-      console.error('Error opening AppKit modal:', e);
-    }
-  };
-  
-  const handleConnectBitcoin = () => {
-    open();
+    userSession.signUserOut();
+    window.location.reload();
   };
 
   const addVoteOption = () => {
@@ -444,63 +447,49 @@ export default function StacksClickAndShip({
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
           </div>
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <div className="text-orange-400 text-sm">
-                  Stacks:
-                  {userAddress && (
-                    <a
-                      href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline text-orange-300 ml-1 font-mono"
-                      title={userAddress}
-                    >
-                      {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
-                    </a>
-                  )}
-                </div>
-                <button
-                  onClick={handleDisconnect}
-                  className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                >
-                  Disconnect STX
-                </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <div className="text-orange-400 text-sm">
+                Connected:
+                {userAddress && (
+                  <a
+                    href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-orange-300 ml-1 font-mono"
+                    title={userAddress}
+                  >
+                    {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
+                  </a>
+                )}
               </div>
-            ) : (
+              <button
+                onClick={handleDisconnect}
+                className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
               <button
                 onClick={connectWallet}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Stacks Wallet
+                Connect Stack/Btc Wallet
               </button>
-            )}
-            
-            {bitcoinAddress ? (
-              <div className="flex items-center gap-3">
-                <div className="text-blue-400 text-sm">
-                  Bitcoin:
-                  <span className="text-blue-300 ml-1 font-mono">
-                    {bitcoinAddress.length > 16 ? `${bitcoinAddress.slice(0, 8)}...${bitcoinAddress.slice(-6)}` : bitcoinAddress}
-                  </span>
-                </div>
-                <button
-                  onClick={handleDisconnectBitcoin}
-                  className="bg-blue-600/50 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                >
-                  Disconnect BTC
-                </button>
-              </div>
-            ) : (
               <button
-                onClick={handleConnectBitcoin}
+                onClick={() => open()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Bitcoin Wallet
+                {appKitAddress
+                  ? (appKitAddress.length > 16
+                      ? `${appKitAddress.slice(0, 8)}...${appKitAddress.slice(-6)}`
+                      : appKitAddress)
+                  : 'Connect Btc Wallet'}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -1422,6 +1411,9 @@ export default function StacksClickAndShip({
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
+              {isConfirmingUsername && (
+                <div className="text-orange-300 text-sm text-center mb-4">Waiting for blockchain confirmation...</div>
+              )}
               
               {/* Loader podczas sprawdzania */}
               {isCheckingUsername && (
@@ -1453,10 +1445,7 @@ export default function StacksClickAndShip({
                           onFinish: (data: any) => {
                             console.log('Transaction submitted:', data);
                             setTxPopup({ show: true, txId: data.txId });
-                            // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
-                            setTimeout(() => {
-                              checkUserName();
-                            }, 3000);
+                            startUsernamePolling(false);
                           },
                           onCancel: () => {
                             console.log('Transaction cancelled');
@@ -1618,10 +1607,7 @@ export default function StacksClickAndShip({
                             console.log('Transaction submitted:', data);
                             setTxPopup({ show: true, txId: data.txId });
                             setInputName('');
-                            // Odśwież status po 3 sekundach (czas na potwierdzenie transakcji)
-                            setTimeout(() => {
-                              checkUserName();
-                            }, 3000);
+                            startUsernamePolling(true);
                           },
                           onCancel: () => {
                             console.log('Transaction cancelled');

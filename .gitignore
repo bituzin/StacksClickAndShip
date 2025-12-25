@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Edytor/narzędzia
+.zencoder/
+.zenflow/
+
+# Rust build artifacts
+clarinet/.cargo/
+clarinet/components/*/target/
+clarinet/components/*/debug/
+clarinet/components/*/release/
+clarinet/target/
+
+# Cache/pliki tymczasowe
+CACHEDIR.TAG
+flake.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -28,6 +43,9 @@ dist-ssr
 .env.local
 .env.production
 .env.*
+
+# Clarinet sensitive files (contains mnemonics/private keys)
+settings/
 
 # Clarinet sensitive files (contains mnemonics/private keys)
 settings/
