@@ -31,12 +31,115 @@ export default function StacksClickAndShip({
   // AppKit hook for Web3Modal
   const { open } = useAppKit();
   const { address: appKitAddress } = useAppKitAccount();
+  const OPTION_SLOTS = 10;
 
-  // Helper do pobierania opcji głosowania w dowolnym formacie
+  const toPlainString = (value: any): string => {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (value && typeof value === 'object') {
+      if ('data' in value) {
+        return toPlainString(value.data);
+      }
+      if ('value' in value) {
+        return toPlainString(value.value);
+      }
+    }
+    return '';
+  };
+
+  const toPlainNumber = (value: any): number => {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'bigint') {
+      return Number(value);
+    }
+    if (typeof value === 'string') {
+      const normalized = Number(value.replace(/n$/, ''));
+      return Number.isNaN(normalized) ? 0 : normalized;
+    }
+    if (value && typeof value === 'object') {
+      if ('value' in value) {
+        return toPlainNumber(value.value);
+      }
+      if ('data' in value) {
+        return toPlainNumber(value.data);
+      }
+    }
+    return 0;
+  };
+
+  const parseOptionsTuple = (optionsCv: any) => {
+    const tuple = optionsCv?.data || optionsCv?.value?.data;
+    if (!tuple) {
+      return [];
+    }
+    const parsed: Array<{ text: string; votes: number; index: number }> = [];
+    for (let i = 0; i < OPTION_SLOTS; i++) {
+      const optionCv = tuple[`option-${i}`];
+      if (!optionCv || !optionCv.value?.data) {
+        continue;
+      }
+      const optionData = optionCv.value.data;
+      const text = toPlainString(optionData.text);
+      if (!text) {
+        continue;
+      }
+      const votes = toPlainNumber(optionData.votes?.value ?? optionData.votes);
+      parsed.push({ text, votes, index: i });
+    }
+    return parsed;
+  };
+
+  const resolveOptionText = (option: any, fallback: string) => {
+    if (typeof option === 'string') {
+      return option;
+    }
+    if (option?.text) {
+      return option.text;
+    }
+    if (typeof option?.value === 'string') {
+      return option.value;
+    }
+    if (typeof option?.data === 'string') {
+      return option.data;
+    }
+    if (typeof option?.label === 'string') {
+      return option.label;
+    }
+    return fallback;
+  };
+
+  const resolveOptionVotes = (option: any, poll: any, index: number) => {
+    if (typeof option?.votes === 'number') {
+      return option.votes;
+    }
+    if (typeof option?.votes === 'bigint') {
+      return Number(option.votes);
+    }
+    const fallback = poll?.['option-votes']?.value?.[index]?.value;
+    return toPlainNumber(fallback);
+  };
+
+  const resolveOptionIndex = (option: any, fallback: number) => {
+    if (typeof option?.index === 'number') {
+      return option.index;
+    }
+    return fallback;
+  };
+
   const getPollOptions = (poll: any) => {
-    if (Array.isArray(poll.options)) return poll.options;
-    if (poll.options?.value && Array.isArray(poll.options.value)) return poll.options.value;
-    if (poll.options?.data && Array.isArray(poll.options.data)) return poll.options.data;
+    if (Array.isArray(poll?.parsedOptions)) return poll.parsedOptions;
+    if (Array.isArray(poll?.optionsList)) return poll.optionsList;
+    if (Array.isArray(poll?.options)) return poll.options;
+    const parsed = parseOptionsTuple(poll?.options);
+    if (parsed.length) {
+      poll.parsedOptions = parsed;
+      return parsed;
+    }
+    if (poll?.options?.value && Array.isArray(poll.options.value)) return poll.options.value;
+    if (poll?.options?.data && Array.isArray(poll.options.data)) return poll.options.data;
     return [];
   };
 
@@ -1294,20 +1397,18 @@ export default function StacksClickAndShip({
                       <div className="space-y-3 mb-6">
                         <h4 className="text-lg font-bold text-white mb-3">Cast your vote:</h4>
                         {(() => {
-                          console.log('🟠 selectedPoll:', selectedPoll);
                           const options = getPollOptions(selectedPoll);
-                          console.log('🟠 getPollOptions(selectedPoll):', options);
                           return options.map((option: any, index: number) => {
-                            const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
-                            const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
-                            const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                            const optionIndex = resolveOptionIndex(option, index);
+                            const optionText = resolveOptionText(option, `Option ${optionIndex + 1}`);
+                            const optionVotesNum = resolveOptionVotes(option, selectedPoll, optionIndex);
                             const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
                               ? Number(selectedPoll['total-votes'].value) 
                               : selectedPoll['total-votes']?.value || 0;
                             const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
                             return (
                               <button
-                                key={index}
+                                key={`${optionText}-${optionIndex}`}
                                 onClick={async () => {
                                   try {
                                     const { uintCV } = await import('@stacks/transactions');
@@ -1319,7 +1420,7 @@ export default function StacksClickAndShip({
                                       contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
                                       contractName: 'votingv1',
                                       functionName: 'cast-vote',
-                                      functionArgs: [uintCV(pollId), uintCV(index)],
+                                      functionArgs: [uintCV(pollId), uintCV(optionIndex)],
                                       network: new StacksMainnet(),
                                       onFinish: (data: any) => {
                                         console.log('Vote submitted:', data);
@@ -1360,15 +1461,15 @@ export default function StacksClickAndShip({
                           {selectedPoll['is-active-calculated']?.value ? 'Current Results:' : 'Final Results:'}
                         </h4>
                         {getPollOptions(selectedPoll).map((option: any, index: number) => {
-                          const optionText = option?.value || option?.data || option || `Option ${index + 1}`;
-                          const optionVotes = selectedPoll['option-votes']?.value?.[index]?.value || 0;
-                          const optionVotesNum = typeof optionVotes === 'bigint' ? Number(optionVotes) : optionVotes;
+                          const optionIndex = resolveOptionIndex(option, index);
+                          const optionText = resolveOptionText(option, `Option ${optionIndex + 1}`);
+                          const optionVotesNum = resolveOptionVotes(option, selectedPoll, optionIndex);
                           const totalVotes = typeof selectedPoll['total-votes']?.value === 'bigint' 
                             ? Number(selectedPoll['total-votes'].value) 
                             : selectedPoll['total-votes']?.value || 0;
                           const percentage = totalVotes > 0 ? ((optionVotesNum / totalVotes) * 100).toFixed(1) : '0.0';
                           return (
-                            <div key={index} className="p-4 rounded-lg bg-gray-800/50 border border-gray-600/30">
+                            <div key={`${optionText}-${optionIndex}`} className="p-4 rounded-lg bg-gray-800/50 border border-gray-600/30">
                               <div className="flex justify-between items-center mb-2">
                                 <span className="text-white font-medium">{optionText}</span>
                                 <span className="text-orange-300 font-bold">{optionVotesNum} votes ({percentage}%)</span>
