@@ -4,7 +4,7 @@ import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X, User } 
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
-import { useAppKit, useWalletInfo, useAppKitAccount } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 
 // Import custom hooks
 import { usePolls, useUserVotingStats, useGMStats, useMessageStats } from '../hooks';
@@ -28,12 +28,40 @@ export default function StacksClickAndShip({
   userSession 
 }: StacksClickAndShipProps) {
   
-  // AppKit hook for Web3Modal
+  // AppKit hook for Web3Modal (dla Bitcoin)
   const { open } = useAppKit();
-  // Pobierz info o portfelu BTC (bip122)
-  const { walletInfo: btcWalletInfo } = useWalletInfo('bip122');
-  // Pobierz adres z AppKit
-  const { address: appKitAddress } = useAppKitAccount();
+  // Pobierz adres Bitcoin z AppKit - NIE używaj tego jako userAddress dla Stacks!
+  const { address: bitcoinAddress, isConnected: isBitcoinConnected, caipAddress } = useAppKitAccount();
+  
+  // Zapobiegaj automatycznemu łączeniu Leather przy odświeżeniu strony
+  const [hasInitialized, setHasInitialized] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Po pierwszym renderze oznacz jako zainicjalizowane
+    if (!hasInitialized) {
+      // Sprawdź czy Leather próbuje się automatycznie połączyć
+      const checkLeatherAutoConnect = async () => {
+        try {
+          // Jeśli wykryto połączenie Leather w pierwszej sekundzie, to była automatyczna synchronizacja
+          const leatherConnectorKey = Object.keys(localStorage).find(key => 
+            key.includes('LeatherProvider') || key.includes('leather')
+          );
+          
+          if (leatherConnectorKey && isBitcoinConnected && !hasInitialized) {
+            console.log('⚠️ Detected Leather auto-connect on page refresh. This is expected behavior.');
+            console.log('ℹ️ To disconnect Leather, click the "Disconnect BTC" button.');
+          }
+        } catch (e) {
+          console.error('Error checking Leather connection:', e);
+        }
+      };
+      
+      setTimeout(() => {
+        checkLeatherAutoConnect();
+        setHasInitialized(true);
+      }, 1000);
+    }
+  }, [isBitcoinConnected, hasInitialized]);
 
   // Helper do pobierania opcji głosowania w dowolnym formacie
   const getPollOptions = (poll: any) => {
@@ -121,26 +149,21 @@ export default function StacksClickAndShip({
     fetchUserVotingStats
   } = useUserVotingStats(userAddress);
 
-  // User address management (Hiro/Xverse and WalletConnect/Leather)
+  // User address management - TYLKO dla portfeli Stacks (Hiro/Xverse)
   React.useEffect(() => {
     if (isAuthenticated && userSession.isUserSignedIn()) {
       const userData = userSession.loadUserData();
       const address = userData.profile.stxAddress.mainnet;
-      console.log('👛 Setting userAddress from Hiro/Xverse:', address);
+      console.log('👛 Setting userAddress from Stacks wallet (Hiro/Xverse):', address);
       if (address !== userAddress) {
         setUserAddress(address);
       }
-    } else if (appKitAddress) {
-      // Ustaw userAddress z WalletConnect/Leather jeśli dostępny
-      if (appKitAddress !== userAddress) {
-        console.log('👛 Setting userAddress from AppKit/WalletConnect:', appKitAddress);
-        setUserAddress(appKitAddress);
-      }
-    } else if (!isAuthenticated && !appKitAddress && userAddress !== null) {
-      console.log('❌ Not connected - clearing userAddress');
+    } else if (!isAuthenticated && userAddress !== null) {
+      // Czyść userAddress tylko gdy Stacks wallet jest rozłączony
+      console.log('❌ Stacks wallet disconnected - clearing userAddress');
       setUserAddress(null);
     }
-  }, [isAuthenticated, userSession, appKitAddress]);
+  }, [isAuthenticated, userSession]);
 
   // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
   React.useEffect(() => {
@@ -206,6 +229,7 @@ export default function StacksClickAndShip({
       checkUserName();
     }
   }, [activeTab, checkUserName]);
+  
 
   // Helper function to extract string from Clarity value
   const extractString = (value: any): string => {
@@ -258,8 +282,25 @@ export default function StacksClickAndShip({
   }
 
   const handleDisconnect = () => {
-    userSession.signUserOut();
-    window.location.reload();
+    // Rozłącz tylko Stacks wallet - NIE odświeżaj strony
+    if (isAuthenticated && userSession.isUserSignedIn()) {
+      userSession.signUserOut();
+    }
+    setUserAddress(null);
+  };
+  
+  const handleDisconnectBitcoin = async () => {
+    // Otwórz AppKit modal Account aby użytkownik mógł się rozłączyć
+    try {
+      console.log('🔌 Opening Account modal to disconnect...');
+      open({ view: 'Account' });
+    } catch (e) {
+      console.error('Error opening AppKit modal:', e);
+    }
+  };
+  
+  const handleConnectBitcoin = () => {
+    open();
   };
 
   const addVoteOption = () => {
@@ -403,49 +444,63 @@ export default function StacksClickAndShip({
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
           </div>
-          {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <div className="text-orange-400 text-sm">
-                Connected:
-                {userAddress && (
-                  <a
-                    href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-orange-300 ml-1 font-mono"
-                    title={userAddress}
-                  >
-                    {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
-                  </a>
-                )}
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <div className="text-orange-400 text-sm">
+                  Stacks:
+                  {userAddress && (
+                    <a
+                      href={`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline text-orange-300 ml-1 font-mono"
+                      title={userAddress}
+                    >
+                      {userAddress.length > 16 ? `${userAddress.slice(0, 8)}...${userAddress.slice(-6)}` : userAddress}
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={handleDisconnect}
+                  className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                >
+                  Disconnect STX
+                </button>
               </div>
-              <button
-                onClick={handleDisconnect}
-                className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
-              >
-                Disconnect
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
+            ) : (
               <button
                 onClick={connectWallet}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Stack/Btc Wallet
+                Connect Stacks Wallet
               </button>
+            )}
+            
+            {bitcoinAddress ? (
+              <div className="flex items-center gap-3">
+                <div className="text-blue-400 text-sm">
+                  Bitcoin:
+                  <span className="text-blue-300 ml-1 font-mono">
+                    {bitcoinAddress.length > 16 ? `${bitcoinAddress.slice(0, 8)}...${bitcoinAddress.slice(-6)}` : bitcoinAddress}
+                  </span>
+                </div>
+                <button
+                  onClick={handleDisconnectBitcoin}
+                  className="bg-blue-600/50 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                >
+                  Disconnect BTC
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => open()}
+                onClick={handleConnectBitcoin}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                {appKitAddress
-                  ? (appKitAddress.length > 16
-                      ? `${appKitAddress.slice(0, 8)}...${appKitAddress.slice(-6)}`
-                      : appKitAddress)
-                  : 'Connect Btc Wallet'}
+                Connect Bitcoin Wallet
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 

@@ -33,5 +33,13 @@ export const modal = createAppKit({
     socials: [],
     swaps: false,
     onramp: false
-  }
+  },
+  enableWalletConnect: true,
+  enableInjected: false,
+  enableCoinbase: false,
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-z-index': 9999
+  },
+  allWallets: 'SHOW'
 });
