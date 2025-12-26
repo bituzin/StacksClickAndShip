@@ -1,9 +1,29 @@
 import React from 'react';
-import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
+import { callReadOnlyFunction, principalCV, cvToString, uintCV } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
 import { GMOK_CONTRACT_ADDRESS, GMOK_CONTRACT_NAME } from '../constants/contracts';
 import { LeaderboardEntry, LastGm } from '../types';
-import { fetchCurrentBlock, parseValue } from '../utils/blockchain';
+import { parseValue } from '../utils/blockchain';
+
+const DEFAULT_SENDER = 'SP000000000000000000002Q6VF78';
+const MAX_RECENT_GMS = 25;
+
+type RecentGmEntry = {
+  id: number;
+  user: string;
+  blockHeight: number;
+  timestamp?: number;
+};
+
+const toNumber = (value: any): number => {
+  return parseValue(value?.value ?? value);
+};
+
+const toUserString = (value: any): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return cvToString(value);
+};
 
 export function useGMStats(userAddress: string | null) {
   const [todayGm, setTodayGm] = React.useState<number | null>(null);
@@ -13,104 +33,167 @@ export function useGMStats(userAddress: string | null) {
   const [lastGmAgo, setLastGmAgo] = React.useState<string | null>(null);
   const [leaderboard, setLeaderboard] = React.useState<LeaderboardEntry[]>([]);
 
+  const senderAddress = userAddress || DEFAULT_SENDER;
+
   const fetchGmCounts = React.useCallback(async () => {
     try {
-      const backendUrl = 'https://gm-backend-seven.vercel.app/api/stats';
-      const response = await fetch(backendUrl);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTodayGm(data.today);
-        setTotalGm(data.total);
-        
-        if (userAddress) {
-          const { principalCV } = await import('@stacks/transactions');
-          const userRes = await callReadOnlyFunction({
+      const [totalRes, todayRes, userRes] = await Promise.all([
+        callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-total-gms-alltime',
+          functionArgs: [],
+          network: new StacksMainnet(),
+          senderAddress
+        }),
+        callReadOnlyFunction({
+          contractAddress: GMOK_CONTRACT_ADDRESS,
+          contractName: GMOK_CONTRACT_NAME,
+          functionName: 'get-daily-gm-count',
+          functionArgs: [],
+          network: new StacksMainnet(),
+          senderAddress
+        }),
+        userAddress
+          ? callReadOnlyFunction({
+              contractAddress: GMOK_CONTRACT_ADDRESS,
+              contractName: GMOK_CONTRACT_NAME,
+              functionName: 'get-user-total-gms',
+              functionArgs: [principalCV(userAddress)],
+              network: new StacksMainnet(),
+              senderAddress: userAddress
+            })
+          : null
+      ]);
+
+      const totalValue = toNumber((totalRes as any)?.value ?? totalRes);
+      const todayValue = toNumber((todayRes as any)?.value ?? todayRes);
+      setTotalGm(totalValue);
+      setTodayGm(todayValue);
+
+      if (userRes) {
+        const userValue = toNumber((userRes as any)?.value ?? userRes);
+        setUserGm(userValue);
+      } else {
+        setUserGm(null);
+      }
+    } catch (error) {
+      console.error('Error fetching GM counts:', error);
+    }
+  }, [senderAddress, userAddress]);
+
+  const fetchRecentGms = React.useCallback(
+    async (total: number): Promise<RecentGmEntry[]> => {
+      if (total <= 0) return [];
+      const ids: number[] = [];
+      const lastId = total - 1;
+      for (let id = lastId; id >= 0 && ids.length < MAX_RECENT_GMS; id--) {
+        ids.push(id);
+      }
+      const responses = await Promise.all(
+        ids.map((id) =>
+          callReadOnlyFunction({
             contractAddress: GMOK_CONTRACT_ADDRESS,
             contractName: GMOK_CONTRACT_NAME,
-            functionName: 'get-user-total-gms',
-            functionArgs: [principalCV(userAddress)],
+            functionName: 'get-gm-by-id',
+            functionArgs: [uintCV(id)],
             network: new StacksMainnet(),
-            senderAddress: userAddress,
-          });
-          const userVal = (userRes as any)?.value?.value;
-          setUserGm(parseValue(userVal));
-        }
-      }
-    } catch (e) {
-      console.error('Error fetching GM counts:', e);
+            senderAddress
+          })
+        )
+      );
+
+      const entries: RecentGmEntry[] = [];
+      responses.forEach((res, index) => {
+        const option = (res as any)?.value;
+        if (option?.type !== 10) return;
+        const gm = option.value?.data || option.value;
+        if (!gm) return;
+        const user = toUserString(gm.user);
+        if (!user) return;
+        const blockHeight = toNumber(gm['block-height']);
+        const timestamp = toNumber(gm.timestamp);
+        entries.push({
+          id: ids[index],
+          user,
+          blockHeight,
+          timestamp: Number.isFinite(timestamp) ? timestamp : undefined
+        });
+      });
+
+      return entries;
+    },
+    [senderAddress]
+  );
+
+  const formatAgo = (timestamp?: number, blockHeight?: number) => {
+    if (timestamp && timestamp > 0) {
+      const diffSeconds = Math.max(0, Math.floor(Date.now() / 1000 - timestamp));
+      if (diffSeconds < 120) return `${diffSeconds}s ago`;
+      if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+      return `${(diffSeconds / 3600).toFixed(1)}h ago`;
     }
-  }, [userAddress]);
+    if (typeof blockHeight === 'number') {
+      return `${blockHeight} blocks ago`;
+    }
+    return null;
+  };
 
   const fetchLastGmAndLeaderboard = React.useCallback(async () => {
     try {
-      const res = await callReadOnlyFunction({
+      const totalRes = await callReadOnlyFunction({
         contractAddress: GMOK_CONTRACT_ADDRESS,
         contractName: GMOK_CONTRACT_NAME,
-        functionName: 'get-last-three-gms',
+        functionName: 'get-total-gms-alltime',
         functionArgs: [],
         network: new StacksMainnet(),
-        senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
+        senderAddress
       });
-      
-      const gms = (res as any).value?.data;
-      if (!gms) {
+      const totalValue = toNumber((totalRes as any)?.value ?? totalRes);
+      if (!totalValue) {
         setLastGm(null);
         setLastGmAgo(null);
         setLeaderboard([]);
         return;
       }
-      
-      const gmList = [];
-      if (gms.first && gms.first.type === 10) gmList.push(gms.first.value);
-      if (gms.second && gms.second.type === 10) gmList.push(gms.second.value);
-      if (gms.third && gms.third.type === 10) gmList.push(gms.third.value);
 
-      if (gmList.length > 0) {
-        const last: any = gmList[0];
-        const userObj = last.data?.user || last.user;
-        const userPrincipal = typeof userObj === 'string' ? userObj : cvToString(userObj);
-        const blockHeightObj = last.data?.['block-height'] || last['block-height'];
-        const blockHeight = typeof blockHeightObj === 'bigint' || typeof blockHeightObj === 'number' 
-          ? blockHeightObj 
-          : blockHeightObj?.value;
-        
-        if (userPrincipal) {
-          setLastGm({ user: userPrincipal, block: Number(blockHeight) });
-          const currentBlock = await fetchCurrentBlock();
-          const diff = currentBlock - Number(blockHeight);
-          const minutes = diff * 10;
-          setLastGmAgo(minutes < 60 ? `${minutes} min ago` : `${(minutes/60).toFixed(1)} h ago`);
-        }
+      const entries = await fetchRecentGms(totalValue);
+      if (entries.length === 0) {
+        setLastGm(null);
+        setLastGmAgo(null);
+        setLeaderboard([]);
+        return;
       }
 
-      const users = Array.from(new Set(gmList.map((g: any) => {
-        const userObj = g.data?.user || g.user;
-        return typeof userObj === 'string' ? userObj : cvToString(userObj);
-      }).filter(Boolean)));
-      
-      const leaderboardData = await Promise.all(users.map(async (addr: string) => {
-        const res: any = await callReadOnlyFunction({
-          contractAddress: GMOK_CONTRACT_ADDRESS,
-          contractName: GMOK_CONTRACT_NAME,
-          functionName: 'get-user-total-gms',
-          functionArgs: [principalCV(addr)],
-          network: new StacksMainnet(),
-          senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
-        });
-        let total = 0;
-        if (res && (res as any).value && (res as any).value.value !== undefined) {
-          total = parseValue((res as any).value.value);
-        }
-        return { user: addr, total };
-      }));
-      
-      leaderboardData.sort((a, b) => b.total - a.total);
-      setLeaderboard(leaderboardData);
-    } catch (e) {
-      console.error('Error fetching last GM and leaderboard:', e);
+      const latest = entries[0];
+      setLastGm({ user: latest.user, block: latest.blockHeight });
+      setLastGmAgo(formatAgo(latest.timestamp, latest.blockHeight));
+
+      const uniqueUsers = Array.from(new Set(entries.map((entry) => entry.user)));
+      const totals = await Promise.all(
+        uniqueUsers.map((addr) =>
+          callReadOnlyFunction({
+            contractAddress: GMOK_CONTRACT_ADDRESS,
+            contractName: GMOK_CONTRACT_NAME,
+            functionName: 'get-user-total-gms',
+            functionArgs: [principalCV(addr)],
+            network: new StacksMainnet(),
+            senderAddress
+          }).then((res) => toNumber((res as any)?.value ?? res))
+        )
+      );
+
+      const data: LeaderboardEntry[] = uniqueUsers
+        .map((addr, index) => ({ user: addr, total: totals[index] || 0 }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+
+      setLeaderboard(data);
+    } catch (error) {
+      console.error('Error fetching GM leaderboard:', error);
+      setLeaderboard([]);
     }
-  }, [userAddress]);
+  }, [fetchRecentGms, senderAddress]);
 
   return {
     todayGm,

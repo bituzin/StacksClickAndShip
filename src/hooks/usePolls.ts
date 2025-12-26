@@ -5,13 +5,75 @@ import { VOTING_CONTRACT_ADDRESS, VOTING_CONTRACT_NAME } from '../constants/cont
 import { Poll } from '../types';
 import { fetchCurrentBlock, parseValue } from '../utils/blockchain';
 
+const OPTION_SLOTS = 10;
+const DEFAULT_SENDER = 'SP000000000000000000002Q6VF78';
+
+const normalizeOptionString = (value: any): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value && typeof value === 'object') {
+    if ('data' in value) {
+      return normalizeOptionString(value.data);
+    }
+    if ('value' in value) {
+      return normalizeOptionString(value.value);
+    }
+  }
+  return '';
+};
+
+const normalizeOptionNumber = (value: any): number => {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'string') {
+    const cleaned = Number(value.replace(/n$/, ''));
+    return Number.isNaN(cleaned) ? 0 : cleaned;
+  }
+  if (value && typeof value === 'object') {
+    if ('value' in value) {
+      return normalizeOptionNumber(value.value);
+    }
+    if ('data' in value) {
+      return normalizeOptionNumber(value.data);
+    }
+  }
+  return 0;
+};
+
+const parseOptionsFromClarity = (optionsCv: any) => {
+  const parsed: Array<{ text: string; votes: number; index: number }> = [];
+  const tuple = optionsCv?.data || optionsCv?.value?.data;
+  if (!tuple) {
+    return parsed;
+  }
+  for (let i = 0; i < OPTION_SLOTS; i++) {
+    const optionCv = tuple[`option-${i}`];
+    if (!optionCv || !optionCv.value?.data) {
+      continue;
+    }
+    const optionData = optionCv.value.data;
+    const text = normalizeOptionString(optionData.text);
+    if (!text) {
+      continue;
+    }
+    const votes = normalizeOptionNumber(optionData.votes);
+    parsed.push({ text, votes, index: i });
+  }
+  return parsed;
+};
+
 export function usePolls(userAddress: string | null) {
   const [activePolls, setActivePolls] = React.useState<Poll[]>([]);
   const [closedPolls, setClosedPolls] = React.useState<Poll[]>([]);
   const [isLoadingPolls, setIsLoadingPolls] = React.useState(false);
 
   const fetchPolls = React.useCallback(async () => {
-    if (!userAddress) return;
+    const senderAddress = userAddress || DEFAULT_SENDER;
     
     try {
       setIsLoadingPolls(true);
@@ -27,7 +89,7 @@ export function usePolls(userAddress: string | null) {
         functionName: 'get-global-stats',
         functionArgs: [],
         network: new StacksMainnet(),
-        senderAddress: userAddress,
+        senderAddress,
       });
       
       const stats = (statsRes as any).value?.data;
@@ -52,7 +114,7 @@ export function usePolls(userAddress: string | null) {
             functionName: 'get-poll-full-details',
             functionArgs: [uintCV(i)],
             network: new StacksMainnet(),
-            senderAddress: userAddress,
+            senderAddress,
           }).catch(err => {
             console.error(`❌ Błąd pobierania głosowania #${i}:`, err);
             return null;
@@ -73,12 +135,9 @@ export function usePolls(userAddress: string | null) {
           console.log('🟢 pollData.options:', pollData.options);
         }
         if (pollData) {
-          // Jeśli pollData.options istnieje i jest tablicą, przypisz bezpośrednio
-          if (Array.isArray(pollData.options)) {
-            pollData.options = pollData.options;
-          } else {
-            pollData.options = [];
-          }
+          const parsedOptions = parseOptionsFromClarity(pollData.options);
+          pollData.parsedOptions = parsedOptions;
+          pollData.optionsList = parsedOptions;
 
           const endBlockHeight = pollData['ends-at'] ? parseValue(pollData['ends-at'].value) : 0;
           const isActiveCalculated = currentBlock < endBlockHeight;
