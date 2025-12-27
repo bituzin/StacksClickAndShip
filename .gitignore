@@ -58,3 +58,24 @@ Clarinet.toml
 
 # Other projects
 stacksdao/
+
+# Clarinet/Stacks sensitive & deployment files
+Clarinet.toml
+settings/Mainnet.toml
+.env.mainnet
+.env.local
+deployments/*.yaml
+clarinet/.cache/
+clarinet/.clarinet/
+
+# Build outputs
+build/
+
+# Temp files
+*.tmp
+
+# Workspace/editor/tooling folders
+.vscode/
+.zencoder/
+.zenflow/
+clarinet/
