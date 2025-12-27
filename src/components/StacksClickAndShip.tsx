@@ -541,7 +541,7 @@ export default function StacksClickAndShip({
       console.log('📤 Sending to contract:', functionArgs);
 
       await openContractCall({
-        contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+        contractAddress: 'SP2Z3M34KEKC79TMRMZB24YG30FE25JPN83TPZSZ2',
         contractName: 'votingv1',
         functionName: 'create-poll',
         functionArgs,
@@ -1423,7 +1423,7 @@ export default function StacksClickAndShip({
                                       : selectedPoll['poll-id']?.value;
                                     
                                     await openContractCall({
-                                      contractAddress: 'SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86',
+                                      contractAddress: 'SP2Z3M34KEKC79TMRMZB24YG30FE25JPN83TPZSZ2',
                                       contractName: 'votingv1',
                                       functionName: 'vote',
                                       functionArgs: [uintCV(pollId), uintCV(optionIndex)],
