@@ -35,10 +35,6 @@ Pełna integracja WalletConnect z metodami Stacks JSON-RPC zgodnie z dokumentacj
 ✅ `stx_callContract` - wywoływanie smart contractów  
 
 ## 🚀 Jak uruchomić
-
-### 1. Zainstaluj zależności (już zrobione ✓)
-```bash
-npm install
 ```
 
 ### 2. Uzyskaj Project ID z WalletConnect Cloud
