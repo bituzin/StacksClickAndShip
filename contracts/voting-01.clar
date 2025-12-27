@@ -44,13 +44,15 @@
   description: (string-utf8 500),
   options-count: uint,
   created-at: uint,
+  created-at-timestamp: uint,
   ends-at: uint,
   status: uint,
   votes-per-user: uint,
   requires-stx: bool,
   min-stx-amount: uint,
   total-votes: uint,
-  total-voters: uint
+  total-voters: uint,
+  last-update-timestamp: uint
 })
 
 ;; Poll options
@@ -63,7 +65,8 @@
 (define-map user-votes {poll-id: uint, voter: principal} {
   vote-count: uint,
   voted-options: (list 10 uint),
-  last-vote-block: uint
+  last-vote-block: uint,
+  last-vote-timestamp: uint
 })
 
 ;; User statistics
@@ -71,7 +74,8 @@
   polls-created: uint,
   polls-voted: uint,
   total-votes-cast: uint,
-  last-activity-block: uint
+  last-activity-block: uint,
+  last-activity-timestamp: uint
 })
 
 ;; Track if user participated in poll
@@ -100,14 +104,16 @@
   (let
     (
       (current-stats (default-to 
-        {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0}
+        {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0, last-activity-timestamp: u0}
         (map-get? user-stats creator)
       ))
+      (current-timestamp stacks-block-time)
     )
     (map-set user-stats creator 
       (merge current-stats {
         polls-created: (+ (get polls-created current-stats) u1),
-        last-activity-block: burn-block-height
+        last-activity-block: burn-block-height,
+        last-activity-timestamp: current-timestamp
       })
     )
   )
@@ -117,15 +123,17 @@
   (let
     (
       (current-stats (default-to 
-        {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0}
+        {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0, last-activity-timestamp: u0}
         (map-get? user-stats voter)
       ))
+      (current-timestamp stacks-block-time)
     )
     (map-set user-stats voter 
       (merge current-stats {
         polls-voted: (+ (get polls-voted current-stats) u1),
         total-votes-cast: (+ (get total-votes-cast current-stats) u1),
-        last-activity-block: burn-block-height
+        last-activity-block: burn-block-height,
+        last-activity-timestamp: current-timestamp
       })
     )
   )
@@ -151,7 +159,7 @@
   )
 )
 
-(define-private (is-poll-active (poll {creator: principal, title: (string-utf8 100), description: (string-utf8 500), options-count: uint, created-at: uint, ends-at: uint, status: uint, votes-per-user: uint, requires-stx: bool, min-stx-amount: uint, total-votes: uint, total-voters: uint}))
+(define-private (is-poll-active (poll {creator: principal, title: (string-utf8 100), description: (string-utf8 500), options-count: uint, created-at: uint, created-at-timestamp: uint, ends-at: uint, status: uint, votes-per-user: uint, requires-stx: bool, min-stx-amount: uint, total-votes: uint, total-voters: uint, last-update-timestamp: uint}))
   (and 
     (is-eq (get status poll) STATUS_ACTIVE)
     (<= burn-block-height (get ends-at poll))
@@ -184,6 +192,7 @@
     (
       (poll-id (increment-poll-counter))
       (ends-at (+ burn-block-height duration-blocks))
+      (current-timestamp stacks-block-time)
     )
     ;; Validations
     (asserts! (and (> (len title) u0) (<= (len title) MAX_TITLE_LENGTH)) err-invalid-title)
@@ -198,13 +207,15 @@
       description: description,
       options-count: u0,
       created-at: burn-block-height,
+      created-at-timestamp: current-timestamp,
       ends-at: ends-at,
       status: STATUS_ACTIVE,
       votes-per-user: votes-per-user,
       requires-stx: requires-stx,
       min-stx-amount: min-stx-amount,
       total-votes: u0,
-      total-voters: u0
+      total-voters: u0,
+      last-update-timestamp: current-timestamp
     })
     
     ;; Store option 0 (required)
@@ -228,7 +239,7 @@
       
       ;; Update options count
       (map-set polls poll-id 
-        (merge (unwrap-panic (map-get? polls poll-id)) {options-count: options-count})
+        (merge (unwrap-panic (map-get? polls poll-id)) {options-count: options-count, last-update-timestamp: current-timestamp})
       )
       
       ;; Update stats
@@ -246,7 +257,7 @@
     (
       (poll (unwrap! (map-get? polls poll-id) err-poll-not-found))
       (user-vote-data (default-to 
-        {vote-count: u0, voted-options: (list), last-vote-block: u0}
+        {vote-count: u0, voted-options: (list), last-vote-block: u0, last-vote-timestamp: u0}
         (map-get? user-votes {poll-id: poll-id, voter: tx-sender})
       ))
       (current-vote-count (get vote-count user-vote-data))
@@ -254,6 +265,7 @@
       (option (unwrap! (map-get? poll-options {poll-id: poll-id, option-index: option-index}) err-invalid-option))
       (user-stx-balance (stx-get-balance tx-sender))
       (is-first-vote (is-none (map-get? user-poll-participation {user: tx-sender, poll-id: poll-id})))
+      (current-timestamp stacks-block-time)
     )
     ;; Validations
     (asserts! (is-poll-active poll) err-poll-closed)
@@ -275,7 +287,8 @@
     (map-set user-votes {poll-id: poll-id, voter: tx-sender} {
       vote-count: (+ current-vote-count u1),
       voted-options: (unwrap-panic (as-max-len? (append voted-options option-index) u10)),
-      last-vote-block: burn-block-height
+      last-vote-block: burn-block-height,
+      last-vote-timestamp: current-timestamp
     })
     
     ;; Track participation and update stats
@@ -285,14 +298,15 @@
         (map-set polls poll-id 
           (merge poll {
             total-votes: (+ (get total-votes poll) u1),
-            total-voters: (+ (get total-voters poll) u1)
+            total-voters: (+ (get total-voters poll) u1),
+            last-update-timestamp: current-timestamp
           })
         )
         (update-voter-stats tx-sender)
         (add-user-voted-poll tx-sender poll-id)
       )
       (map-set polls poll-id 
-        (merge poll {total-votes: (+ (get total-votes poll) u1)})
+        (merge poll {total-votes: (+ (get total-votes poll) u1), last-update-timestamp: current-timestamp})
       )
     )
     
@@ -307,6 +321,7 @@
       (user-vote-data (unwrap! (map-get? user-votes {poll-id: poll-id, voter: tx-sender}) err-poll-not-found))
       (old-option (unwrap! (map-get? poll-options {poll-id: poll-id, option-index: old-option-index}) err-invalid-option))
       (new-option (unwrap! (map-get? poll-options {poll-id: poll-id, option-index: new-option-index}) err-invalid-option))
+      (current-timestamp stacks-block-time)
     )
     ;; Validations
     (asserts! (is-poll-active poll) err-poll-closed)
@@ -324,7 +339,10 @@
     
     ;; Update timestamp
     (map-set user-votes {poll-id: poll-id, voter: tx-sender}
-      (merge user-vote-data {last-vote-block: burn-block-height})
+      (merge user-vote-data {last-vote-block: burn-block-height, last-vote-timestamp: current-timestamp})
+    )
+    (map-set polls poll-id
+      (merge poll {last-update-timestamp: current-timestamp})
     )
     
     (ok true)
@@ -335,11 +353,12 @@
   (let
     (
       (poll (unwrap! (map-get? polls poll-id) err-poll-not-found))
+      (current-timestamp stacks-block-time)
     )
     (asserts! (is-eq tx-sender (get creator poll)) err-not-authorized)
     (asserts! (is-eq (get status poll) STATUS_ACTIVE) err-poll-closed)
     
-    (map-set polls poll-id (merge poll {status: STATUS_CANCELLED}))
+    (map-set polls poll-id (merge poll {status: STATUS_CANCELLED, last-update-timestamp: current-timestamp}))
     (var-set total-active-polls (- (var-get total-active-polls) u1))
     (var-set total-cancelled-polls (+ (var-get total-cancelled-polls) u1))
     
@@ -351,11 +370,12 @@
   (let
     (
       (poll (unwrap! (map-get? polls poll-id) err-poll-not-found))
+      (current-timestamp stacks-block-time)
     )
     (asserts! (> burn-block-height (get ends-at poll)) err-poll-active)
     (asserts! (is-eq (get status poll) STATUS_ACTIVE) err-poll-closed)
     
-    (map-set polls poll-id (merge poll {status: STATUS_CLOSED}))
+    (map-set polls poll-id (merge poll {status: STATUS_CLOSED, last-update-timestamp: current-timestamp}))
     (var-set total-active-polls (- (var-get total-active-polls) u1))
     (var-set total-closed-polls (+ (var-get total-closed-polls) u1))
     
@@ -369,6 +389,15 @@
 
 (define-read-only (get-poll (poll-id uint))
   (ok (map-get? polls poll-id))
+)
+
+(define-read-only (get-poll-status-as-string (poll-id uint))
+  (let
+    (
+      (poll (unwrap! (map-get? polls poll-id) err-poll-not-found))
+    )
+    (to-ascii? (get status poll))
+  )
 )
 
 (define-read-only (get-poll-option (poll-id uint) (option-index uint))
@@ -403,7 +432,7 @@
 
 (define-read-only (get-user-stats (user principal))
   (ok (default-to 
-    {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0}
+    {polls-created: u0, polls-voted: u0, total-votes-cast: u0, last-activity-block: u0, last-activity-timestamp: u0}
     (map-get? user-stats user)
   ))
 )
@@ -414,7 +443,8 @@
     active-polls: (var-get total-active-polls),
     closed-polls: (var-get total-closed-polls),
     cancelled-polls: (var-get total-cancelled-polls),
-    current-block: burn-block-height
+    current-block: burn-block-height,
+    current-timestamp: stacks-block-time
   })
 )
 
@@ -431,6 +461,7 @@
       description: (get description poll),
       options-count: (get options-count poll),
       created-at: (get created-at poll),
+      created-at-timestamp: (get created-at-timestamp poll),
       ends-at: (get ends-at poll),
       status: (get status poll),
       votes-per-user: (get votes-per-user poll),
@@ -440,6 +471,7 @@
       total-voters: (get total-voters poll),
       options: options,
       is-active: (is-poll-active poll),
+      last-update-timestamp: (get last-update-timestamp poll),
       blocks-remaining: (if (> (get ends-at poll) burn-block-height)
         (- (get ends-at poll) burn-block-height)
         u0
@@ -481,6 +513,8 @@
       total-votes: (get total-votes poll),
       total-voters: (get total-voters poll),
       options: options,
+      created-at-timestamp: (get created-at-timestamp poll),
+      last-update-timestamp: (get last-update-timestamp poll),
       is-ended: (> burn-block-height (get ends-at poll)),
       winner: none
     })
@@ -492,7 +526,7 @@
     (
       (poll (unwrap! (map-get? polls poll-id) err-poll-not-found))
       (user-vote-data (default-to 
-        {vote-count: u0, voted-options: (list), last-vote-block: u0}
+        {vote-count: u0, voted-options: (list), last-vote-block: u0, last-vote-timestamp: u0}
         (map-get? user-votes {poll-id: poll-id, voter: user})
       ))
       (user-stx-balance (stx-get-balance user))

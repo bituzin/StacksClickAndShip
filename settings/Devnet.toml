@@ -1,8 +1,0 @@
-[network]
-id = "devnet"
-name = "bitdev"
-miner_address = "ST000000000000000000002AMW42H"
-deployer_address = "SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86"
-
-[accounts]
-deployer = { address = "SP12XVTT769QRMK2TA2EETR5G57Q3W5A4HPA67S86" }
