@@ -5,6 +5,10 @@ import { bitcoin, bitcoinTestnet } from '@reown/appkit/networks';
 // 1. Get projectId from https://cloud.reown.com
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'c12e4a814a2dd9dcb0dd714c65a86c62';
 
+// Debug: Log the project ID being used
+console.log('🔍 Reown Project ID:', projectId);
+console.log('📊 Environment VITE_REOWN_PROJECT_ID:', import.meta.env.VITE_REOWN_PROJECT_ID);
+
 // 2. Set up Bitcoin networks - AppKit provides official network definitions
 const networks = [bitcoin, bitcoinTestnet];
 
