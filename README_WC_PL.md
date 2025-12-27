@@ -156,17 +156,4 @@ src/
 .env.example                       # Przykładowa konfiguracja
 WALLETCONNECT_SETUP.md             # Pełna dokumentacja (EN)
 README_WC_PL.md                    # Ten plik
-```
-
-## ✨ To wszystko!
-
-Masz teraz pełną integrację WalletConnect z Twoim dappem Stacks! 🎉
-
-Możesz używać wszystkich metod JSON-RPC opisanych w dokumentacji WalletConnect.
-Hook `useWalletConnect` jest gotowy do użycia w dowolnym komponencie React.
-
----
-
-Autor: GitHub Copilot  
-Data: Grudzień 2024  
-Wersja: 1.0
+``
