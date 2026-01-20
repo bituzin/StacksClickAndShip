@@ -246,7 +246,21 @@
       (update-creator-stats tx-sender)
       (add-creator-poll tx-sender poll-id)
       (var-set total-active-polls (+ (var-get total-active-polls) u1))
-      
+       ;; EMIT POLL CREATION EVENT
+      (print {
+        event: "poll-created",
+        poll-id: poll-id,
+        creator: tx-sender,
+        title: title,
+        duration-blocks: duration-blocks,
+        votes-per-user: votes-per-user,
+        requires-stx: requires-stx,
+        min-stx-amount: min-stx-amount,
+        options-count: options-count,
+        ends-at: ends-at,
+        created-at: burn-block-height,
+        timestamp: current-timestamp
+      })
       (ok poll-id)
     )
   )
