@@ -314,7 +314,8 @@ export default function StacksClickAndShip() {
             </div>
           </div>
         )}
-vote' && (
+
+        {activeTab === 'vote' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <div className="text-center mb-8">
@@ -388,7 +389,6 @@ vote' && (
           </div>
         )}
 
-        {activeTab === '
         {activeTab === 'gm' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
@@ -521,8 +521,8 @@ vote' && (
 
         {activeTab === 'learn' && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6">📚 Learn Stacks</h2>
+            <div className="bg-gradient-to-br from-yellow-100 via-orange-200 to-pink-200 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 shadow-2xl">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">📚 Learn Stacks</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
