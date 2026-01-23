@@ -548,6 +548,35 @@ export default function StacksClickAndShip() {
             </div>
           </div>
         )}
+
+        {activeTab === 'get-name' && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-gradient-to-br from-blue-100 via-cyan-200 to-green-200 backdrop-blur-md rounded-2xl p-8 border border-blue-400/30 shadow-2xl">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">🆔 Get Your Name</h2>
+              
+              <div className="mb-4">
+                <label className="block text-purple-300 mb-2">Enter your desired name</label>
+                <input 
+                  type="text" 
+                  placeholder="my-awesome-name" 
+                  className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-purple-300">🌟 Availability: <span className="font-bold text-green-400">Available!</span></span>
+                <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all">
+                  ⏩ Claim Name
+                </button>
+              </div>
+
+              <div className="text-center text-purple-400 text-sm">
+                <p>* Names are permanent and unique to your profile *</p>
+                <p>* You can change your name once every 30 days *</p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
