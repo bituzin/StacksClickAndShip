@@ -59,6 +59,9 @@
     (var-set next-gm-id (+ gm-id u1))
     (var-set total-gms-alltime (+ (var-get total-gms-alltime) u1))
       
+      ;; Events
+      (define-event gm-sent (user principal) (gm-id uint) (block-height uint) (timestamp uint))
+      (define-event gm-stats-updated (user principal) (total-gms uint) (last-gm-block uint) (last-gm-timestamp uint))
     (ok gm-id)
   )
 )
@@ -96,6 +99,7 @@
 ;; Read-only: Get last 3 GMs
 (define-read-only (get-last-three-gms)
   (let
+          (emit-event gm-stats-updated sender (+ (get total-gms user-stats) u1) current-block current-timestamp)
     (
       (total (var-get next-gm-id))
       (last-id (if (> total u0) (- total u1) u0))
@@ -106,6 +110,7 @@
       first: (map-get? recent-gms last-id),
       second: (map-get? recent-gms second-id),
       third: (map-get? recent-gms third-id)
+          (emit-event gm-sent sender gm-id current-block current-timestamp)
     })
   )
 )

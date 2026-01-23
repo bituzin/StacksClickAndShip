@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sun, MessageSquare, Upload, BookOpen, Home, Plus, X, CheckSquare } from 'lucide-react';
+import { Sun, MessageSquare, Upload, BookOpen, Home, Plus, X, CheckSquare, User } from 'lucide-react';
 
 export default function StacksClickAndShip() {
   const [activeTab, setActiveTab] = useState('home');
@@ -136,6 +136,12 @@ export default function StacksClickAndShip() {
                   <BookOpen className="text-pink-400 mb-3" size={32} />
                   <h3 className="text-xl font-bold text-white mb-2">Learn Stacks</h3>
                   <p className="text-purple-300">Interactive tutorials and documentation</p>
+                </div>
+
+                <div className="bg-blue-100/40 rounded-xl p-6 border border-blue-400/20 hover:border-blue-400/50 transition-all cursor-pointer">
+                  <User className="text-cyan-400 mb-3" size={32} />
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Get Your Name</h3>
+                  <p className="text-blue-700">Register your unique username on Stacks blockchain</p>
                 </div>
               </div>
 
@@ -314,7 +320,8 @@ export default function StacksClickAndShip() {
             </div>
           </div>
         )}
-vote' && (
+
+        {activeTab === 'vote' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
               <div className="text-center mb-8">
@@ -388,7 +395,6 @@ vote' && (
           </div>
         )}
 
-        {activeTab === '
         {activeTab === 'gm' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
@@ -521,8 +527,8 @@ vote' && (
 
         {activeTab === 'learn' && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6">📚 Learn Stacks</h2>
+            <div className="bg-gradient-to-br from-yellow-100 via-orange-200 to-pink-200 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 shadow-2xl">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">📚 Learn Stacks</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
@@ -544,6 +550,35 @@ vote' && (
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'get-name' && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-gradient-to-br from-blue-100 via-cyan-200 to-green-200 backdrop-blur-md rounded-2xl p-8 border border-blue-400/30 shadow-2xl">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">🆔 Get Your Name</h2>
+              
+              <div className="mb-4">
+                <label className="block text-purple-300 mb-2">Enter your desired name</label>
+                <input 
+                  type="text" 
+                  placeholder="my-awesome-name" 
+                  className="w-full bg-purple-900/50 border border-purple-500/30 rounded-lg px-4 py-3 text-white placeholder-purple-400 focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-purple-300">🌟 Availability: <span className="font-bold text-green-400">Available!</span></span>
+                <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all">
+                  ⏩ Claim Name
+                </button>
+              </div>
+
+              <div className="text-center text-purple-400 text-sm">
+                <p>* Names are permanent and unique to your profile *</p>
+                <p>* You can change your name once every 30 days *</p>
               </div>
             </div>
           </div>
