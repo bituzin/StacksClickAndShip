@@ -61,7 +61,8 @@ export default function StacksClickAndShip() {
     { id: 'vote', label: 'Vote', icon: Vote },
     { id: 'message', label: 'Send Message', icon: MessageSquare },
     { id: 'deploy', label: 'Deploy', icon: Upload },
-    { id: 'learn', label: 'Learn', icon: BookOpen }
+    { id: 'learn', label: 'Learn', icon: BookOpen },
+    { id: 'get-name', label: 'Get Your Name', icon: User }
   ];
 
   return (
@@ -138,10 +139,10 @@ export default function StacksClickAndShip() {
                   <p className="text-purple-300">Interactive tutorials and documentation</p>
                 </div>
 
-                <div className="bg-blue-100/40 rounded-xl p-6 border border-blue-400/20 hover:border-blue-400/50 transition-all cursor-pointer">
-                  <User className="text-cyan-400 mb-3" size={32} />
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Get Your Name</h3>
-                  <p className="text-blue-700">Register your unique username on Stacks blockchain</p>
+                <div className="bg-blue-100/40 rounded-xl p-6 border border-blue-400/20 hover:border-blue-400/50 transition-all cursor-pointer" onClick={() => setActiveTab('get-name')}>
+                  <User className="text-cyan-600 mb-3" size={32} />
+                  <h3 className="text-xl font-bold text-blue-900 mb-2">Get Your Name</h3>
+                  <p className="text-blue-800">Register your unique username on Stacks blockchain</p>
                 </div>
               </div>
 

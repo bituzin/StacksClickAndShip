@@ -156,6 +156,4 @@
         {total-gms: u0, last-gm-block: u0, last-gm-timestamp: u0}
         (map-get? user-gm-stats user)))
     )
-    (ok (get last-gm-timestamp user-stats))
-  )
-)
+    (ok (get last-gm-timestam
