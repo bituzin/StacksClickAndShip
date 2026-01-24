@@ -61,7 +61,8 @@ export default function StacksClickAndShip() {
     { id: 'vote', label: 'Vote', icon: Vote },
     { id: 'message', label: 'Send Message', icon: MessageSquare },
     { id: 'deploy', label: 'Deploy', icon: Upload },
-    { id: 'learn', label: 'Learn', icon: BookOpen }
+    { id: 'learn', label: 'Learn', icon: BookOpen },
+    { id: 'get-name', label: 'Get Your Name', icon: User }
   ];
 
   return (
