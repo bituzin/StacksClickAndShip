@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X, User } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X } from 'lucide-react';
+import GetNameCard from './GetNameCard';
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
@@ -714,11 +715,7 @@ export default function StacksClickAndShip({
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
                 </Link>
 
-                <Link to="/getname" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
-                  <User className="text-yellow-400 mb-3" size={32} />
-                  <h3 className="text-xl text-white mb-2">Get Your Name</h3>
-                  <p className="text-orange-300">Register your unique Stacks username</p>
-                </Link>
+                <GetNameCard />
 
                 <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
