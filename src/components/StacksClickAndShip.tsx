@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User, Plus } from 'lucide-react';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
 import VoteCard from './VoteCard';
@@ -42,6 +42,19 @@ export default function StacksClickAndShip({
   const [showTakenPopup, setShowTakenPopup] = React.useState(false);
   const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
   const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
+  
+  // Voting state
+  const [voteTitle, setVoteTitle] = React.useState('');
+  const [voteDescription, setVoteDescription] = React.useState('');
+  const [voteOptions, setVoteOptions] = React.useState<string[]>(['', '']);
+  const [voteDuration, setVoteDuration] = React.useState(100);
+  const [votesPerUser, setVotesPerUser] = React.useState(1);
+  const [requiresSTX, setRequiresSTX] = React.useState(false);
+  const [minSTXAmount, setMinSTXAmount] = React.useState(0);
+  const [showCreateVoteModal, setShowCreateVoteModal] = React.useState(false);
+  const [selectedPoll, setSelectedPoll] = React.useState<any>(null);
+  const [showVoteModal, setShowVoteModal] = React.useState(false);
 
   // GM stats hook
   const {
@@ -54,6 +67,22 @@ export default function StacksClickAndShip({
     lastGmAgo,
     leaderboard
   } = useGMStats(userAddress);
+
+  // Message stats hook
+  const {
+    todayMessages,
+    totalMessages,
+    userMessages,
+    recentMessages,
+    messageLeaderboard,
+    fetchMessageCounts
+  } = useMessageStats(userAddress, isAuthenticated);
+
+  // Polls hook
+  const { activePolls, closedPolls, isLoadingPolls, fetchPolls } = usePolls(userAddress);
+
+  // User voting stats hook
+  const { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats } = useUserVotingStats(userAddress);
 
   // checkUserName musi być zadeklarowane po useState!
   const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
@@ -98,6 +127,11 @@ export default function StacksClickAndShip({
   const { address: appKitAddress } = useAppKitAccount();
   const OPTION_SLOTS = 10;
   const APPKIT_STORAGE_KEY = 'appkitAddress';
+
+  // Computed values
+  const isWalletConnectedViaHiro = isAuthenticated && userAddress && !persistedAppKitAddress;
+  const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
+  const isWalletConnectedViaAppKit = !!effectiveAppKitAddress;
 
   const formatAddress = (address?: string | null) => {
     if (!address) return '';
@@ -265,6 +299,28 @@ export default function StacksClickAndShip({
     }
     return '';
   };
+
+  // Start polling for username after registration/release
+  const startUsernamePolling = React.useCallback((shouldClear: boolean) => {
+    if (usernamePollTimeoutRef.current) {
+      clearTimeout(usernamePollTimeoutRef.current);
+    }
+    
+    const poll = () => {
+      checkUserName({ silent: true });
+      usernamePollTimeoutRef.current = setTimeout(poll, 5000); // Poll every 5 seconds
+    };
+    
+    if (shouldClear) {
+      // Start polling after a short delay to allow the transaction to be processed
+      usernamePollTimeoutRef.current = setTimeout(poll, 10000);
+    } else {
+      // For username release, just wait and check once
+      usernamePollTimeoutRef.current = setTimeout(() => {
+        checkUserName({ silent: true });
+      }, 10000);
+    }
+  }, [checkUserName]);
 
   React.useEffect(() => {
     close();
