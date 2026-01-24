@@ -32,6 +32,57 @@ export default function StacksClickAndShip({
 }: StacksClickAndShipProps) {
   
   // AppKit hook for Web3Modal
+  // ...wszystkie deklaracje useState...
+  const [userAddress, setUserAddress] = React.useState<string | null>(null);
+  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
+  const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
+  const [inputName, setInputName] = React.useState('');
+  const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
+  const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
+  const [showTakenPopup, setShowTakenPopup] = React.useState(false);
+  const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
+  const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // checkUserName musi być zadeklarowane po useState!
+  const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true;
+    if (!isSilent) {
+      setIsCheckingUsername(true);
+    }
+    if (!isAuthenticated || !userAddress) {
+      setCurrentUsername(null);
+      if (!isSilent) {
+        setIsCheckingUsername(false);
+      }
+      return false;
+    }
+    let hasName = false;
+    try {
+      const res = await callReadOnlyFunction({
+        contractAddress: GET_NAME_CONTRACT_ADDRESS,
+        contractName: GET_NAME_CONTRACT_NAME,
+        functionName: 'get-address-username',
+        functionArgs: [principalCV(userAddress)],
+        network: new StacksMainnet(),
+        senderAddress: userAddress,
+      });
+      if ((res as any).type === 10) {
+        const username = cvToString((res as any).value);
+        setCurrentUsername(username);
+        hasName = true;
+      } else {
+        setCurrentUsername(null);
+      }
+    } catch (e) {
+      setCurrentUsername(null);
+    } finally {
+      if (!isSilent) {
+        setIsCheckingUsername(false);
+      }
+    }
+    return hasName;
+  }, [isAuthenticated, userAddress]);
   const { open, close } = useAppKit();
   const { address: appKitAddress } = useAppKitAccount();
   const OPTION_SLOTS = 10;
