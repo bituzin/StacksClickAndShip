@@ -12,7 +12,6 @@ import LearnCard from './LearnCard';
 
 
 import { useState, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { POST_MESSAGE_CONTRACT_ADDRESS, POST_MESSAGE_CONTRACT_NAME, GMOK_CONTRACT_ADDRESS, GMOK_CONTRACT_NAME, GET_NAME_CONTRACT_ADDRESS, GET_NAME_CONTRACT_NAME } from '../constants/contracts';
 import { useGMStats } from '../hooks/useGMStats';
 import { usePolls } from '../hooks/usePolls';
@@ -76,9 +75,6 @@ function StacksClickAndShip() {
 
   // Pozostałe funkcje i logika z pliku...
   // ...
-}
-
-export default StacksClickAndShip;
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
@@ -1471,3 +1467,5 @@ export default StacksClickAndShip;
     </div>
   );
 }
+
+  export default StacksClickAndShip;
