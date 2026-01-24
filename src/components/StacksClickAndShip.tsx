@@ -10,39 +10,71 @@ import PostMessageCard from './PostMessageCard';
 import LearnCard from './LearnCard';
 
 
+
+import { useState, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+import { POST_MESSAGE_CONTRACT_ADDRESS, POST_MESSAGE_CONTRACT_NAME, GMOK_CONTRACT_ADDRESS, GMOK_CONTRACT_NAME, GET_NAME_CONTRACT_ADDRESS, GET_NAME_CONTRACT_NAME } from '../constants/contracts';
+import { useGMStats } from '../hooks/useGMStats';
+import { usePolls } from '../hooks/usePolls';
+import { useUserVotingStats } from '../hooks/useUserVotingStats';
+import { useMessageStats } from '../hooks/useMessageStats';
+
 function StacksClickAndShip() {
-  // ...existing hooki, zmienne, funkcje, JSX...
-  // (Wszystko co było poza funkcją, przenosimy tutaj)
+  // Routing
+  const location = useLocation();
+  const path = location.pathname;
 
-  // Sprawdź nazwę przy zmianie adresu
-  React.useEffect(() => {
-    checkUserName();
-  }, [checkUserName]);
+  // Zakładki
+  const [activeTab, setActiveTab] = useState('home');
 
-  // Sprawdź nazwę przy wejściu na zakładkę getname
-  React.useEffect(() => {
-    if (activeTab === 'getname') {
-      console.log('Entering getname tab, checking username...');
-      checkUserName();
-    }
-  }, [activeTab, checkUserName]);
+  // Popupy i modale
+  const [txPopup, setTxPopup] = useState(null);
+  const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
+  const [showVoteModal, setShowVoteModal] = useState(false);
+  const [showTakenPopup, setShowTakenPopup] = useState(false);
+  const [showAvailablePopup, setShowAvailablePopup] = useState(false);
 
-  // Helper function to extract string from Clarity value
-  const extractString = (value: any): string => {
-    if (typeof value === 'string') return value;
-    if (value && typeof value === 'object') {
-      if ('value' in value) return String(value.value);
-      if ('data' in value) return String(value.data);
-    }
-    return '';
-  };
+  // Głosowania
+  const [voteTitle, setVoteTitle] = useState('');
+  const [voteDescription, setVoteDescription] = useState('');
+  const [voteOptions, setVoteOptions] = useState(['', '']);
+  const [voteDuration, setVoteDuration] = useState(100);
+  const [votesPerUser, setVotesPerUser] = useState(1);
+  const [requiresSTX, setRequiresSTX] = useState(false);
+  const [minSTXAmount, setMinSTXAmount] = useState(0);
+  const [selectedPoll, setSelectedPoll] = useState(null);
 
-  // ...wszystkie pozostałe hooki, funkcje, zmienne i JSX z pliku...
+  // Username
+  const [inputName, setInputName] = useState('');
+  const [currentUsername, setCurrentUsername] = useState(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isConfirmingUsername, setIsConfirmingUsername] = useState(false);
 
-  // (Wklej cały kod JSX, return, logikę, obsługę modali, itd.)
+  // AppKit/Wallet
+  const [appKitAddress, setAppKitAddress] = useState(null);
+  const [persistedAppKitAddress, setPersistedAppKitAddress] = useState(null);
+  const [isWalletConnectedViaHiro, setIsWalletConnectedViaHiro] = useState(false);
+  const [isWalletConnectedViaAppKit, setIsWalletConnectedViaAppKit] = useState(false);
+  const [userAddress, setUserAddress] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // UWAGA: Usuń powtórzony return i kod poza funkcją!
+  // Refy
+  const usernamePollTimeoutRef = useRef(null);
 
+  // Custom hooki
+  const { todayGm, totalGm, userGm, lastGm, lastGmAgo, leaderboard, fetchGmCounts, fetchLastGmAndLeaderboard } = useGMStats(userAddress);
+  const { todayMessages, totalMessages, userMessages, messageLeaderboard, fetchMessageCounts } = useMessageStats(userAddress);
+  const { activePolls, closedPolls, isLoadingPolls, fetchPolls } = usePolls(userAddress);
+  const { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats } = useUserVotingStats(userAddress);
+
+  // Dummy funkcje do podłączenia portfela, formatowania adresu itd.
+  const connectWallet = () => {};
+  const open = () => {};
+  const close = () => {};
+  const formatAddress = (addr) => addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+  const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
+
+  // Pozostałe funkcje i logika z pliku...
   // ...
 }
 
