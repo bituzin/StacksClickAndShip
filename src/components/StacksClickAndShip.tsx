@@ -1,151 +1,52 @@
+
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User, Plus } from 'lucide-react';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
 import VoteCard from './VoteCard';
-import LearnCard from './LearnCard';
 import PostMessageCard from './PostMessageCard';
-import { openContractCall } from '@stacks/connect';
-import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
-import { StacksMainnet } from '@stacks/network';
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
+import LearnCard from './LearnCard';
 
-// Import custom hooks
-import { usePolls, useUserVotingStats, useGMStats, useMessageStats } from '../hooks';
 
-// Import types
-import { StacksClickAndShipProps, TxPopup } from '../types';
+function StacksClickAndShip() {
+  // ...existing hooki, zmienne, funkcje, JSX...
+  // (Wszystko co było poza funkcją, przenosimy tutaj)
 
-// Import constants
-import {
-  POST_MESSAGE_CONTRACT_ADDRESS,
-  POST_MESSAGE_CONTRACT_NAME,
-  GMOK_CONTRACT_ADDRESS,
-  GMOK_CONTRACT_NAME,
-  GET_NAME_CONTRACT_ADDRESS,
-  GET_NAME_CONTRACT_NAME
-} from '../constants/contracts';
+  // Sprawdź nazwę przy zmianie adresu
+  React.useEffect(() => {
+    checkUserName();
+  }, [checkUserName]);
 
-export default function StacksClickAndShip({ 
-  isAuthenticated, 
-  connectWallet, 
-  userSession 
-}: StacksClickAndShipProps) {
-  
-  // AppKit hook for Web3Modal
-  // ...wszystkie deklaracje useState...
-  const [userAddress, setUserAddress] = React.useState<string | null>(null);
-  const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
-  const [inputName, setInputName] = React.useState('');
-  const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
-  const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
-  const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
-  const [showTakenPopup, setShowTakenPopup] = React.useState(false);
-  const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
-  const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
-  
-  // Voting state
-  const [voteTitle, setVoteTitle] = React.useState('');
-  const [voteDescription, setVoteDescription] = React.useState('');
-  const [voteOptions, setVoteOptions] = React.useState<string[]>(['', '']);
-  const [voteDuration, setVoteDuration] = React.useState(100);
-  const [votesPerUser, setVotesPerUser] = React.useState(1);
-  const [requiresSTX, setRequiresSTX] = React.useState(false);
-  const [minSTXAmount, setMinSTXAmount] = React.useState(0);
-  const [showCreateVoteModal, setShowCreateVoteModal] = React.useState(false);
-  const [selectedPoll, setSelectedPoll] = React.useState<any>(null);
-  const [showVoteModal, setShowVoteModal] = React.useState(false);
-
-  // GM stats hook
-  const {
-    fetchGmCounts,
-    fetchLastGmAndLeaderboard,
-    todayGm,
-    totalGm,
-    userGm,
-    lastGm,
-    lastGmAgo,
-    leaderboard
-  } = useGMStats(userAddress);
-
-  // Message stats hook
-  const {
-    todayMessages,
-    totalMessages,
-    userMessages,
-    recentMessages,
-    messageLeaderboard,
-    fetchMessageCounts
-  } = useMessageStats(userAddress, isAuthenticated);
-
-  // Polls hook
-  const { activePolls, closedPolls, isLoadingPolls, fetchPolls } = usePolls(userAddress);
-
-  // User voting stats hook
-  const { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats } = useUserVotingStats(userAddress);
-
-  // checkUserName musi być zadeklarowane po useState!
-  const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
-    const isSilent = options?.silent === true;
-    if (!isSilent) {
-      setIsCheckingUsername(true);
+  // Sprawdź nazwę przy wejściu na zakładkę getname
+  React.useEffect(() => {
+    if (activeTab === 'getname') {
+      console.log('Entering getname tab, checking username...');
+      checkUserName();
     }
-        {activeTab === 'message' && path.startsWith('/message') && (
-          <PostMessageCard
-            isAuthenticated={isAuthenticated}
-            todayMessages={todayMessages}
-            totalMessages={totalMessages}
-            userMessages={userMessages}
-            messageLeaderboard={messageLeaderboard}
-            fetchMessageCounts={fetchMessageCounts}
-            setTxPopup={setTxPopup}
-          />
-        )}
+  }, [activeTab, checkUserName]);
 
-  const getPollOptions = (poll: any) => {
-    if (Array.isArray(poll?.parsedOptions)) return poll.parsedOptions;
-    if (Array.isArray(poll?.optionsList)) return poll.optionsList;
-    if (Array.isArray(poll?.options)) return poll.options;
-    const parsed = parseOptionsTuple(poll?.options);
-    if (parsed.length) {
-      poll.parsedOptions = parsed;
-      return parsed;
+  // Helper function to extract string from Clarity value
+  const extractString = (value: any): string => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      if ('value' in value) return String(value.value);
+      if ('data' in value) return String(value.data);
     }
-    if (poll?.options?.value && Array.isArray(poll.options.value)) return poll.options.value;
-    if (poll?.options?.data && Array.isArray(poll.options.data)) return poll.options.data;
-    return [];
+    return '';
   };
 
-  const location = useLocation();
+  // ...wszystkie pozostałe hooki, funkcje, zmienne i JSX z pliku...
 
-  // Determine active tab from pathname
-  const path = location.pathname;
-  let activeTab: string = 'home';
-  if (path.startsWith('/gm')) activeTab = 'gm';
-  else if (path.startsWith('/message')) activeTab = 'message';
-  else if (path.startsWith('/vote')) activeTab = 'vote';
-  else if (path.startsWith('/getname')) activeTab = 'getname';
-  else if (path === '/learn') activeTab = 'learn';
+  // (Wklej cały kod JSX, return, logikę, obsługę modali, itd.)
 
-  const menuItems = [
-    { id: 'home', label: 'Home', icon: Home, to: '/' },
-    { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
-    { id: 'message', label: 'Post', icon: MessageSquare, to: '/message' },
-    { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
-    { id: 'getname', label: 'Get Your Name', icon: Mail, to: '/getname' },
-    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
-  ];
+  // UWAGA: Usuń powtórzony return i kod poza funkcją!
 
+  // ...
+}
 
-  
-  // ...existing code...
-        {activeTab === 'vote' && path.startsWith('/vote') && (
-          <div className="max-w-7xl mx-auto">
-            <VoteCard fetchPolls={fetchPolls} setTxPopup={setTxPopup} />
-          </div>
-        )}
+export default StacksClickAndShip;
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
