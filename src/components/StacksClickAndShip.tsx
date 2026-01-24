@@ -703,7 +703,7 @@ export default function StacksClickAndShip({
                 </Link>
 
                 <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
-                  <Mail className="text-amber-400 mb-3" size={32} />
+                  <Mail className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
@@ -715,13 +715,13 @@ export default function StacksClickAndShip({
                 </Link>
 
                 <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
-                  <BookOpen className="text-amber-300 mb-3" size={32} />
+                  <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
 
                 <Link to="/getname" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
-                  <User className="text-orange-400 mb-3" size={32} />
+                  <User className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Get Your Name</h3>
                   <p className="text-orange-300">Register your unique username on Stacks blockchain</p>
                 </Link>
