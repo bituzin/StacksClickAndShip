@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User } from 'lucide-react';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
+import VoteCard from './VoteCard';
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
@@ -188,175 +189,11 @@ export default function StacksClickAndShip({
   const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
   const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Vote states
-  const [showCreateVoteModal, setShowCreateVoteModal] = React.useState(false);
-  const [voteTitle, setVoteTitle] = React.useState('');
-  const [voteDescription, setVoteDescription] = React.useState('');
-  const [voteOptions, setVoteOptions] = React.useState(['', '']);
-  const [voteDuration, setVoteDuration] = React.useState(100);
-  const [votesPerUser, setVotesPerUser] = React.useState(1);
-  const [requiresSTX, setRequiresSTX] = React.useState(false);
-  const [minSTXAmount, setMinSTXAmount] = React.useState(0);
-  const [selectedPoll, setSelectedPoll] = React.useState<any | null>(null);
-  const [showVoteModal, setShowVoteModal] = React.useState(false);
-
-  // Use custom hooks
-  const {
-    todayGm,
-    totalGm,
-    userGm,
-    lastGm,
-    lastGmAgo,
-    leaderboard,
-    fetchGmCounts,
-    fetchLastGmAndLeaderboard
-  } = useGMStats(userAddress);
-
-  const {
-    todayMessages,
-    totalMessages,
-    userMessages,
-    messageLeaderboard,
-    fetchMessageCounts
-  } = useMessageStats(userAddress, isAuthenticated);
-
-  const {
-    activePolls,
-    closedPolls,
-    isLoadingPolls,
-    fetchPolls
-  } = usePolls(userAddress);
-
-  const {
-    userPollsCreated,
-    userPollsVoted,
-    userTotalVotesCast,
-    fetchUserVotingStats
-  } = useUserVotingStats(userAddress);
-
-  const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
-
-  const isWalletConnectedViaHiro = Boolean(isAuthenticated && userAddress);
-  const isWalletConnectedViaAppKit = Boolean(!isWalletConnectedViaHiro && effectiveAppKitAddress);
-
-  // User address management (Hiro/Xverse and WalletConnect/Leather)
-  React.useEffect(() => {
-    if (isAuthenticated && userSession.isUserSignedIn()) {
-      const userData = userSession.loadUserData();
-      const address = userData.profile.stxAddress.mainnet;
-      console.log('👛 Setting userAddress from Hiro/Xverse:', address);
-      if (address !== userAddress) {
-        setUserAddress(address);
-      }
-    } else if (effectiveAppKitAddress) {
-      // Ustaw userAddress z WalletConnect/Leather jeśli dostępny
-      if (effectiveAppKitAddress !== userAddress) {
-        console.log('👛 Setting userAddress from AppKit/WalletConnect:', effectiveAppKitAddress);
-        setUserAddress(effectiveAppKitAddress);
-      }
-    } else if (!isAuthenticated && !effectiveAppKitAddress && userAddress !== null) {
-      console.log('❌ Not connected - clearing userAddress');
-      setUserAddress(null);
-    }
-  }, [effectiveAppKitAddress, isAuthenticated, userAddress, userSession]);
-
-  // Monitoruj zmiany adresu co sekundę (dla przypadku przełączenia portfela)
-  React.useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const interval = setInterval(() => {
-      if (userSession.isUserSignedIn()) {
-        const userData = userSession.loadUserData();
-        const currentAddress = userData.profile.stxAddress.mainnet;
-        if (currentAddress !== userAddress) {
-          setUserAddress(currentAddress);
-        }
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, userAddress, userSession]);
-
-  // Funkcja do sprawdzania nazwy użytkownika (wydzielona, żeby można było wywoływać wielokrotnie)
-  const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
-    const isSilent = options?.silent === true;
-    if (!isSilent) {
-      setIsCheckingUsername(true);
-    }
-    if (!isAuthenticated || !userAddress) {
-      setCurrentUsername(null);
-      if (!isSilent) {
-        setIsCheckingUsername(false);
-      }
-      return false;
-    }
-    let hasName = false;
-    try {
-      const res = await callReadOnlyFunction({
-        contractAddress: GET_NAME_CONTRACT_ADDRESS,
-        contractName: GET_NAME_CONTRACT_NAME,
-        functionName: 'get-address-username',
-        functionArgs: [principalCV(userAddress)],
-        network: new StacksMainnet(),
-        senderAddress: userAddress,
-      });
-      console.log('Response from get-address-username:', res);
-      if ((res as any).type === 10) {
-        const username = cvToString((res as any).value);
-        console.log('User has username:', username);
-        setCurrentUsername(username);
-        hasName = true;
-      } else {
-        console.log('User has no username');
-        setCurrentUsername(null);
-      }
-    } catch (e) {
-      console.error('Error checking user name:', e);
-      setCurrentUsername(null);
-    } finally {
-      if (!isSilent) {
-        setIsCheckingUsername(false);
-      }
-    }
-    return hasName;
-  }, [isAuthenticated, userAddress]);
-
-  const stopUsernamePolling = React.useCallback(() => {
-    if (usernamePollTimeoutRef.current) {
-      clearTimeout(usernamePollTimeoutRef.current);
-      usernamePollTimeoutRef.current = null;
-    }
-    setIsConfirmingUsername(false);
-  }, []);
-
-  const startUsernamePolling = React.useCallback((expectedHasName: boolean) => {
-    if (!isAuthenticated || !userAddress) {
-      return;
-    }
-    stopUsernamePolling();
-    setIsConfirmingUsername(true);
-    const deadline = Date.now() + 120000;
-    const poll = async () => {
-      const hasName = await checkUserName({ silent: true });
-      if (hasName === expectedHasName) {
-        stopUsernamePolling();
-        return;
-      }
-      if (Date.now() >= deadline) {
-        stopUsernamePolling();
-        return;
-      }
-      usernamePollTimeoutRef.current = setTimeout(poll, 5000);
-    };
-    poll();
-  }, [checkUserName, isAuthenticated, stopUsernamePolling, userAddress]);
-
-  React.useEffect(() => {
-    return () => {
-      stopUsernamePolling();
-    };
-  }, [stopUsernamePolling]);
-
+  // ...existing code...
+        {activeTab === 'vote' && path.startsWith('/vote') && (
+          <div className="max-w-7xl mx-auto">
+            <VoteCard fetchPolls={fetchPolls} setTxPopup={setTxPopup} />
+          </div>
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
     checkUserName();
