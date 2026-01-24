@@ -5,6 +5,7 @@ import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
 import VoteCard from './VoteCard';
 import LearnCard from './LearnCard';
+import PostMessageCard from './PostMessageCard';
 import { openContractCall } from '@stacks/connect';
 import { callReadOnlyFunction, principalCV, cvToString } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
@@ -91,149 +92,17 @@ export default function StacksClickAndShip({
     if (!isSilent) {
       setIsCheckingUsername(true);
     }
-    if (!isAuthenticated || !userAddress) {
-      setCurrentUsername(null);
-      if (!isSilent) {
-        setIsCheckingUsername(false);
-      }
-      return false;
-    }
-    let hasName = false;
-    try {
-      const res = await callReadOnlyFunction({
-        contractAddress: GET_NAME_CONTRACT_ADDRESS,
-        contractName: GET_NAME_CONTRACT_NAME,
-        functionName: 'get-address-username',
-        functionArgs: [principalCV(userAddress)],
-        network: new StacksMainnet(),
-        senderAddress: userAddress,
-      });
-      if ((res as any).type === 10) {
-        const username = cvToString((res as any).value);
-        setCurrentUsername(username);
-        hasName = true;
-      } else {
-        setCurrentUsername(null);
-      }
-    } catch (e) {
-      setCurrentUsername(null);
-    } finally {
-      if (!isSilent) {
-        setIsCheckingUsername(false);
-      }
-    }
-    return hasName;
-  }, [isAuthenticated, userAddress]);
-  const { open, close } = useAppKit();
-  const { address: appKitAddress } = useAppKitAccount();
-  const OPTION_SLOTS = 10;
-  const APPKIT_STORAGE_KEY = 'appkitAddress';
-
-  // Computed values
-  const isWalletConnectedViaHiro = isAuthenticated && userAddress && !persistedAppKitAddress;
-  const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
-  const isWalletConnectedViaAppKit = !!effectiveAppKitAddress;
-
-  const formatAddress = (address?: string | null) => {
-    if (!address) return '';
-    return address.length > 16 ? `${address.slice(0, 8)}...${address.slice(-6)}` : address;
-  };
-
-  const toPlainString = (value: any): string => {
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (value && typeof value === 'object') {
-      if ('data' in value) {
-        return toPlainString(value.data);
-      }
-      if ('value' in value) {
-        return toPlainString(value.value);
-      }
-    }
-    return '';
-  };
-
-  const toPlainNumber = (value: any): number => {
-    if (typeof value === 'number') {
-      return value;
-    }
-    if (typeof value === 'bigint') {
-      return Number(value);
-    }
-    if (typeof value === 'string') {
-      const normalized = Number(value.replace(/n$/, ''));
-      return Number.isNaN(normalized) ? 0 : normalized;
-    }
-    if (value && typeof value === 'object') {
-      if ('value' in value) {
-        return toPlainNumber(value.value);
-      }
-      if ('data' in value) {
-        return toPlainNumber(value.data);
-      }
-    }
-    return 0;
-  };
-
-  const parseOptionsTuple = (optionsCv: any) => {
-    const tuple = optionsCv?.data || optionsCv?.value?.data;
-    if (!tuple) {
-      return [];
-    }
-    const parsed: Array<{ text: string; votes: number; index: number }> = [];
-    for (let i = 0; i < OPTION_SLOTS; i++) {
-      const optionCv = tuple[`option-${i}`];
-      if (!optionCv || !optionCv.value?.data) {
-        continue;
-      }
-      const optionData = optionCv.value.data;
-      const text = toPlainString(optionData.text);
-      if (!text) {
-        continue;
-      }
-      const votes = toPlainNumber(optionData.votes?.value ?? optionData.votes);
-      parsed.push({ text, votes, index: i });
-    }
-    return parsed;
-  };
-
-  const resolveOptionText = (option: any, fallback: string) => {
-    if (typeof option === 'string') {
-      return option;
-    }
-    if (option?.text) {
-      return option.text;
-    }
-    if (typeof option?.value === 'string') {
-      return option.value;
-    }
-    if (typeof option?.data === 'string') {
-      return option.data;
-    }
-    if (typeof option?.label === 'string') {
-      return option.label;
-    }
-    return fallback;
-  };
-
-  const resolveOptionVotes = (option: any, poll: any, index: number) => {
-    if (typeof option?.votes === 'number') {
-      return option.votes;
-    }
-    if (typeof option?.votes === 'bigint') {
-      return Number(option.votes);
-    }
-    const fallback = poll?.['option-votes']?.value?.[index]?.value;
-    return toPlainNumber(fallback);
-  };
-
-  const resolveOptionIndex = (option: any, fallback: number) => {
-    if (typeof option?.index === 'number') {
-      return option.index;
-    }
-    return fallback;
-  };
+        {activeTab === 'message' && path.startsWith('/message') && (
+          <PostMessageCard
+            isAuthenticated={isAuthenticated}
+            todayMessages={todayMessages}
+            totalMessages={totalMessages}
+            userMessages={userMessages}
+            messageLeaderboard={messageLeaderboard}
+            fetchMessageCounts={fetchMessageCounts}
+            setTxPopup={setTxPopup}
+          />
+        )}
 
   const getPollOptions = (poll: any) => {
     if (Array.isArray(poll?.parsedOptions)) return poll.parsedOptions;
