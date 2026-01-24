@@ -722,8 +722,8 @@ export default function StacksClickAndShip({
 
                 <Link to="/getname" className="bg-blue-100/40 rounded-xl p-6 border border-blue-400/20 hover:border-blue-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <User className="text-cyan-600 mb-3" size={32} />
-                  <h3 className="text-xl font-bold text-blue-900 mb-2">Get Your Name</h3>
-                  <p className="text-blue-800">Register your unique username on Stacks blockchain</p>
+                  <h3 className="text-xl text-white mb-2">Get Your Name</h3>
+                  <p className="text-orange-300">Register your unique username on Stacks blockchain</p>
                 </Link>
               </div>
 
