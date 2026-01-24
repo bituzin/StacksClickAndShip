@@ -34,7 +34,6 @@ export default function StacksClickAndShip({
   // AppKit hook for Web3Modal
   // ...wszystkie deklaracje useState...
   const [userAddress, setUserAddress] = React.useState<string | null>(null);
-  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
   const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
   const [inputName, setInputName] = React.useState('');
   const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
@@ -43,6 +42,18 @@ export default function StacksClickAndShip({
   const [showTakenPopup, setShowTakenPopup] = React.useState(false);
   const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
   const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // GM stats hook
+  const {
+    fetchGmCounts,
+    fetchLastGmAndLeaderboard,
+    todayGm,
+    totalGm,
+    userGm,
+    lastGm,
+    lastGmAgo,
+    leaderboard
+  } = useGMStats(userAddress);
 
   // checkUserName musi być zadeklarowane po useState!
   const checkUserName = React.useCallback(async (options?: { silent?: boolean }) => {
@@ -224,21 +235,6 @@ export default function StacksClickAndShip({
   ];
 
 
-  // User address state
-  const [userAddress, setUserAddress] = React.useState<string | null>(null);
-  const [persistedAppKitAddress, setPersistedAppKitAddress] = React.useState<string | null>(null);
-  
-  // Transaction popup state
-  const [txPopup, setTxPopup] = React.useState<TxPopup | null>(null);
-  
-  // Get name states
-  const [inputName, setInputName] = React.useState('');
-  const [currentUsername, setCurrentUsername] = React.useState<string | null>(null);
-  const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
-  const [showAvailablePopup, setShowAvailablePopup] = React.useState(false);
-  const [showTakenPopup, setShowTakenPopup] = React.useState(false);
-  const [isConfirmingUsername, setIsConfirmingUsername] = React.useState(false);
-  const usernamePollTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // ...existing code...
         {activeTab === 'vote' && path.startsWith('/vote') && (
