@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X } from 'lucide-react';
+import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, Plus, X } from 'lucide-react';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
 import { openContractCall } from '@stacks/connect';
