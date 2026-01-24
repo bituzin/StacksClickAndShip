@@ -194,6 +194,8 @@ export default function StacksClickAndShip({
           <div className="max-w-7xl mx-auto">
             <VoteCard fetchPolls={fetchPolls} setTxPopup={setTxPopup} />
           </div>
+        )}
+
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
     checkUserName();
