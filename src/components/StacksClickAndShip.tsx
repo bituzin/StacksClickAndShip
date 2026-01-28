@@ -112,6 +112,31 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   }, [userAddress, persistedAppKitAddress]);
 
 
+  // Synchronizuj stan logowania z propsów
+  React.useEffect(() => {
+    if (propIsAuthenticated !== undefined) {
+      setIsAuthenticated(propIsAuthenticated);
+    }
+  }, [propIsAuthenticated]);
+
+  // Pobierz adres użytkownika z userSession
+  React.useEffect(() => {
+    if (propUserSession && propUserSession.isUserSignedIn()) {
+      const userData = propUserSession.loadUserData();
+      const address = userData?.profile?.stxAddress?.mainnet || null;
+      if (address) {
+        setUserAddress(address);
+        setIsWalletConnectedViaHiro(true);
+        setIsWalletConnectedViaAppKit(false);
+      }
+    } else {
+      if (!effectiveAppKitAddress) {
+        setUserAddress(null);
+        setIsWalletConnectedViaHiro(false);
+      }
+    }
+  }, [propUserSession, effectiveAppKitAddress]);
+
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
     checkUserName();
