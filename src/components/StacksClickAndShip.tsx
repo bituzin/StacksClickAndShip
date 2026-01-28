@@ -152,6 +152,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' }
   ];
 
+  // Synchronizuj activeTab z aktualną ścieżką
+  React.useEffect(() => {
+    if (path === '/') {
+      setActiveTab('home');
+    } else if (path.startsWith('/gm')) {
+      setActiveTab('gm');
+    } else if (path.startsWith('/vote')) {
+      setActiveTab('vote');
+    } else if (path.startsWith('/message')) {
+      setActiveTab('message');
+    } else if (path.startsWith('/learn')) {
+      setActiveTab('learn');
+    } else if (path.startsWith('/getname')) {
+      setActiveTab('getname');
+    }
+  }, [path]);
+
   // Sprawdź nazwę przy wejściu na zakładkę getname
   React.useEffect(() => {
     if (activeTab === 'getname') {
