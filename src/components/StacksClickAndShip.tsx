@@ -74,7 +74,19 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   const { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats } = useUserVotingStats(userAddress);
 
   // Dummy funkcje do podłączenia portfela, formatowania adresu itd.
-  const connectWallet = propConnectWallet || (() => {});
+  const connectWallet = propConnectWallet || (() => {
+    console.warn('⚠️ connectWallet called but propConnectWallet is undefined!');
+  });
+  
+  // Debug: Log when propConnectWallet is received
+  React.useEffect(() => {
+    console.log('🔍 StacksClickAndShip received props:', {
+      propConnectWallet: !!propConnectWallet,
+      propIsAuthenticated,
+      propUserSession: !!propUserSession
+    });
+  }, [propConnectWallet, propIsAuthenticated, propUserSession]);
+  
   const open = async () => {
     try {
       const module = await import('../config/appkit');
@@ -116,26 +128,36 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   React.useEffect(() => {
     if (propIsAuthenticated !== undefined) {
       setIsAuthenticated(propIsAuthenticated);
+      console.log('🔄 Updated isAuthenticated:', propIsAuthenticated);
     }
   }, [propIsAuthenticated]);
 
   // Pobierz adres użytkownika z userSession
   React.useEffect(() => {
     if (propUserSession && propUserSession.isUserSignedIn()) {
-      const userData = propUserSession.loadUserData();
-      const address = userData?.profile?.stxAddress?.mainnet || null;
-      if (address) {
-        setUserAddress(address);
-        setIsWalletConnectedViaHiro(true);
-        setIsWalletConnectedViaAppKit(false);
+      try {
+        const userData = propUserSession.loadUserData();
+        const address = userData?.profile?.stxAddress?.mainnet || null;
+        console.log('👤 User data loaded:', { address, userData });
+        if (address) {
+          setUserAddress(address);
+          setIsWalletConnectedViaHiro(true);
+          setIsWalletConnectedViaAppKit(false);
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error('Error loading user data:', e);
       }
     } else {
       if (!effectiveAppKitAddress) {
         setUserAddress(null);
         setIsWalletConnectedViaHiro(false);
+        if (propIsAuthenticated === false) {
+          setIsAuthenticated(false);
+        }
       }
     }
-  }, [propUserSession, effectiveAppKitAddress]);
+  }, [propUserSession, propIsAuthenticated, effectiveAppKitAddress]);
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
@@ -518,7 +540,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={connectWallet}
+                onClick={() => {
+                  console.log('🔘 Orange button clicked! Calling connectWallet...');
+                  connectWallet();
+                }}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 Connect Stack/Btc Wallet
