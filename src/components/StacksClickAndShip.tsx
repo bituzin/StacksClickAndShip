@@ -11,7 +11,7 @@ import GetNameCard from './GetNameCard';
 import VoteCard from './VoteCard';
 import PostMessageCard from './PostMessageCard';
 import LearnCard from './LearnCard';
-import LeatherConnectButton from './LeatherConnect';
+
 
 
 
@@ -474,28 +474,19 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 w-60">
+            <div className="flex gap-2">
               <button
                 onClick={connectWallet}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                Connect Hiro/Xverse
+                Connect Stack/Btc Wallet
               </button>
               <button
                 onClick={() => open()}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors w-full"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 Connect Btc Wallet
               </button>
-              <LeatherConnectButton onConnect={(addresses) => {
-                if (addresses?.stx) {
-                  setUserAddress(addresses.stx);
-                  setIsAuthenticated(true);
-                  setIsWalletConnectedViaHiro(false);
-                  setIsWalletConnectedViaAppKit(false);
-                  // Możesz dodać dodatkowe akcje, np. popup
-                }
-              }} />
             </div>
           )}
         </div>
