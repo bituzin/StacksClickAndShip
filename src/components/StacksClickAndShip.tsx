@@ -3,11 +3,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User, Plus } from 'lucide-react';
+import { openContractCall } from '@stacks/connect';
+import { callReadOnlyFunction } from '@stacks/transactions';
+import { StacksMainnet } from '@stacks/network';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
 import VoteCard from './VoteCard';
 import PostMessageCard from './PostMessageCard';
 import LearnCard from './LearnCard';
+
 
 
 
@@ -18,7 +22,10 @@ import { usePolls } from '../hooks/usePolls';
 import { useUserVotingStats } from '../hooks/useUserVotingStats';
 import { useMessageStats } from '../hooks/useMessageStats';
 
-function StacksClickAndShip() {
+const APPKIT_STORAGE_KEY = 'stacks_appkit_address';
+
+function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any }) {
+  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession } = props || {};
   // Routing
   const location = useLocation();
   const path = location.pathname;
@@ -27,7 +34,7 @@ function StacksClickAndShip() {
   const [activeTab, setActiveTab] = useState('home');
 
   // Popupy i modale
-  const [txPopup, setTxPopup] = useState(null);
+  const [txPopup, setTxPopup] = useState<any>(null);
   const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [showTakenPopup, setShowTakenPopup] = useState(false);
@@ -41,45 +48,148 @@ function StacksClickAndShip() {
   const [votesPerUser, setVotesPerUser] = useState(1);
   const [requiresSTX, setRequiresSTX] = useState(false);
   const [minSTXAmount, setMinSTXAmount] = useState(0);
-  const [selectedPoll, setSelectedPoll] = useState(null);
+  const [selectedPoll, setSelectedPoll] = useState<any>(null);
 
   // Username
   const [inputName, setInputName] = useState('');
-  const [currentUsername, setCurrentUsername] = useState(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [isConfirmingUsername, setIsConfirmingUsername] = useState(false);
 
   // AppKit/Wallet
-  const [appKitAddress, setAppKitAddress] = useState(null);
-  const [persistedAppKitAddress, setPersistedAppKitAddress] = useState(null);
+  const [appKitAddress, setAppKitAddress] = useState<string | null>(null);
+  const [persistedAppKitAddress, setPersistedAppKitAddress] = useState<string | null>(null);
   const [isWalletConnectedViaHiro, setIsWalletConnectedViaHiro] = useState(false);
   const [isWalletConnectedViaAppKit, setIsWalletConnectedViaAppKit] = useState(false);
   const [userAddress, setUserAddress] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Refy
-  const usernamePollTimeoutRef = useRef(null);
+  const usernamePollTimeoutRef = useRef<any>(null);
 
   // Custom hooki
   const { todayGm, totalGm, userGm, lastGm, lastGmAgo, leaderboard, fetchGmCounts, fetchLastGmAndLeaderboard } = useGMStats(userAddress);
-  const { todayMessages, totalMessages, userMessages, messageLeaderboard, fetchMessageCounts } = useMessageStats(userAddress);
+  const { todayMessages, totalMessages, userMessages, messageLeaderboard, fetchMessageCounts } = useMessageStats(userAddress, isAuthenticated);
   const { activePolls, closedPolls, isLoadingPolls, fetchPolls } = usePolls(userAddress);
   const { userPollsCreated, userPollsVoted, userTotalVotesCast, fetchUserVotingStats } = useUserVotingStats(userAddress);
 
   // Dummy funkcje do podłączenia portfela, formatowania adresu itd.
-  const connectWallet = () => {};
-  const open = () => {};
+  const connectWallet = propConnectWallet || (() => {
+    console.warn('⚠️ connectWallet called but propConnectWallet is undefined!');
+  });
+  
+  // Debug: Log when propConnectWallet is received
+  React.useEffect(() => {
+    console.log('🔍 StacksClickAndShip received props:', {
+      propConnectWallet: !!propConnectWallet,
+      propIsAuthenticated,
+      propUserSession: !!propUserSession
+    });
+  }, [propConnectWallet, propIsAuthenticated, propUserSession]);
+  
+  const open = async () => {
+    try {
+      const module = await import('../config/appkit');
+      await module.modal.open();
+    } catch (e) {
+      console.error('Error opening AppKit modal:', e);
+    }
+  };
   const close = () => {};
-  const formatAddress = (addr) => addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
+  const formatAddress = (addr: string | null) => addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '';
   const effectiveAppKitAddress = appKitAddress || persistedAppKitAddress;
 
   // Pozostałe funkcje i logika z pliku...
   // ...
 
+  // Safe placeholder for checking username. Restores missing function to avoid runtime errors.
+  const checkUserName = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsCheckingUsername(true);
+    try {
+      const addr = userAddress || persistedAppKitAddress;
+      if (!addr) {
+        setCurrentUsername(null);
+        return;
+      }
+
+      // TODO: implement actual read-only call to GET_NAME contract here.
+      // For now, assume no username and avoid throwing errors.
+      setCurrentUsername(null);
+    } catch (e) {
+      console.error('checkUserName error:', e);
+      setCurrentUsername(null);
+    } finally {
+      if (!opts?.silent) setIsCheckingUsername(false);
+    }
+  }, [userAddress, persistedAppKitAddress]);
+
+
+  // Synchronizuj stan logowania z propsów
+  React.useEffect(() => {
+    if (propIsAuthenticated !== undefined) {
+      setIsAuthenticated(propIsAuthenticated);
+      console.log('🔄 Updated isAuthenticated:', propIsAuthenticated);
+    }
+  }, [propIsAuthenticated]);
+
+  // Pobierz adres użytkownika z userSession
+  React.useEffect(() => {
+    if (propUserSession && propUserSession.isUserSignedIn()) {
+      try {
+        const userData = propUserSession.loadUserData();
+        const address = userData?.profile?.stxAddress?.mainnet || null;
+        console.log('👤 User data loaded:', { address, userData });
+        if (address) {
+          setUserAddress(address);
+          setIsWalletConnectedViaHiro(true);
+          setIsWalletConnectedViaAppKit(false);
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
+    } else {
+      if (!effectiveAppKitAddress) {
+        setUserAddress(null);
+        setIsWalletConnectedViaHiro(false);
+        if (propIsAuthenticated === false) {
+          setIsAuthenticated(false);
+        }
+      }
+    }
+  }, [propUserSession, propIsAuthenticated, effectiveAppKitAddress]);
+
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
     checkUserName();
   }, [checkUserName]);
+
+  // Menu items (moved from legacy root file)
+  const menuItems = [
+    { id: 'home', label: 'Home', icon: Home, to: '/' },
+    { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
+    { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
+    { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
+    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
+    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' }
+  ];
+
+  // Synchronizuj activeTab z aktualną ścieżką
+  React.useEffect(() => {
+    if (path === '/') {
+      setActiveTab('home');
+    } else if (path.startsWith('/gm')) {
+      setActiveTab('gm');
+    } else if (path.startsWith('/vote')) {
+      setActiveTab('vote');
+    } else if (path.startsWith('/message')) {
+      setActiveTab('message');
+    } else if (path.startsWith('/learn')) {
+      setActiveTab('learn');
+    } else if (path.startsWith('/getname')) {
+      setActiveTab('getname');
+    }
+  }, [path]);
 
   // Sprawdź nazwę przy wejściu na zakładkę getname
   React.useEffect(() => {
@@ -97,6 +207,49 @@ function StacksClickAndShip() {
       if ('data' in value) return String(value.data);
     }
     return '';
+  };
+
+  // Poll helpers - normalize options returned by hooks/usePolls
+  const getPollOptions = (poll: any): Array<any> => {
+    if (!poll) return [];
+    if (Array.isArray(poll.optionsList) && poll.optionsList.length > 0) return poll.optionsList;
+    if (Array.isArray(poll.parsedOptions) && poll.parsedOptions.length > 0) return poll.parsedOptions;
+    // Fallback: try to extract options from tuple shape
+    try {
+      const tuple = poll.options?.data || poll.options?.value?.data;
+      if (!tuple) return [];
+      const items: any[] = [];
+      for (let i = 0; i < 10; i++) {
+        const opt = tuple[`option-${i}`];
+        if (!opt || !opt.value?.data) continue;
+        const text = extractString(opt.value.data.text || opt.value.data);
+        const votes = (opt.value.data.votes && (typeof opt.value.data.votes === 'bigint' ? Number(opt.value.data.votes) : Number(opt.value.data.votes))) || 0;
+        if (text) items.push({ text, votes, index: i });
+      }
+      return items;
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const resolveOptionIndex = (option: any, fallbackIndex: number) => {
+    if (option == null) return fallbackIndex;
+    if (typeof option.index === 'number') return option.index;
+    return fallbackIndex;
+  };
+
+  const resolveOptionText = (option: any, fallback: string) => {
+    if (option == null) return fallback;
+    if (typeof option === 'string') return option;
+    return option.text ?? fallback;
+  };
+
+  const resolveOptionVotes = (option: any, poll: any, optionIndex: number) => {
+    if (option && typeof option.votes === 'number') return option.votes;
+    const list = getPollOptions(poll);
+    const found = list.find((o: any) => o.index === optionIndex || o.index == optionIndex);
+    if (found) return found.votes || 0;
+    return 0;
   };
 
   // Start polling for username after registration/release
@@ -181,7 +334,9 @@ function StacksClickAndShip() {
   }
 
   const handleDisconnect = () => {
-    userSession.signUserOut();
+    if (propUserSession && typeof propUserSession.signUserOut === 'function') {
+      propUserSession.signUserOut();
+    }
     window.location.reload();
   };
 
@@ -385,7 +540,10 @@ function StacksClickAndShip() {
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={connectWallet}
+                onClick={() => {
+                  console.log('🔘 Orange button clicked! Calling connectWallet...');
+                  connectWallet();
+                }}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 Connect Stack/Btc Wallet
