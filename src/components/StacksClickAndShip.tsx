@@ -635,6 +635,12 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
+
+                <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                  <Plus className="text-yellow-400 mb-3" size={32} />
+                  <h3 className="text-xl text-white mb-2">Deploy</h3>
+                  <p className="text-orange-300">Deploy and manage smart contracts</p>
+                </Link>
               </div>
 
 
