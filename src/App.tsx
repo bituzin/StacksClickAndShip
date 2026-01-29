@@ -102,6 +102,10 @@ function App() {
             <StacksClickAndShip 
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
+              userSession={userSession}
+            />
+          }
+        />
         <Route path="/getname"
           element={
             <StacksClickAndShip 
@@ -115,11 +119,6 @@ function App() {
           element={
             <StacksClickAndShip 
               isAuthenticated={isAuthenticated}
-              connectWallet={connectWallet}
-              userSession={userSession}
-            />
-          }
-        />
               connectWallet={connectWallet}
               userSession={userSession}
             />
