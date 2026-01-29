@@ -653,7 +653,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-2xl text-white mb-2">Welcome to Stacks - Click and Ship</h2>
-              <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn...</p>
+              <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn, deploy...</p>
               <p className="text-orange-200 text-lg mb-8">
                 Your all-in-one toolkit for the Stacks blockchain. Say GM, send messages, create vote, and learn about Stacks basics - all in one place.
               </p>
