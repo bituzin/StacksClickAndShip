@@ -171,7 +171,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
     { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
-    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' }
+    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' },
+    { id: 'deploy', label: 'Deploy', icon: Plus, to: '/deploy' }
   ];
 
   // Synchronizuj activeTab z aktualną ścieżką
@@ -188,7 +189,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       setActiveTab('learn');
     } else if (path.startsWith('/getname')) {
       setActiveTab('getname');
+    } else if (path.startsWith('/deploy')) {
+      setActiveTab('deploy');
     }
+          {/* Deploy Panel */}
+          {activeTab === 'deploy' && path.startsWith('/deploy') && (
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                    <Plus className="text-yellow-400 inline align-middle" size={40} />
+                    <span>Deploy</span>
+                  </h2>
+                  <p className="text-orange-300">Panel for contract deployment and management (coming soon).</p>
+                </div>
+              </div>
+            </div>
+          )}
   }, [path]);
 
   // Sprawdź nazwę przy wejściu na zakładkę getname
