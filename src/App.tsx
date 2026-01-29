@@ -37,8 +37,17 @@ function App() {
       },
       redirectTo: '/',
       onFinish: () => {
-        // Nie odświeżaj strony - tylko zaktualizuj stan
-        setIsAuthenticated(true);
+        console.log('✅ Wallet connected - checking auth state...');
+        // Sprawdź czy użytkownik jest rzeczywiście zalogowany
+        setTimeout(() => {
+          const isSignedIn = userSession.isUserSignedIn();
+          console.log('🔍 User signed in:', isSignedIn);
+          if (isSignedIn) {
+            setIsAuthenticated(true);
+            const userData = userSession.loadUserData();
+            console.log('👤 User data after connect:', userData);
+          }
+        }, 100);
       },
       userSession,
     });
@@ -97,8 +106,16 @@ function App() {
             />
           }
         />
-        <Route 
-          path="/getname"
+        <Route path="/getname"
+          element={
+            <StacksClickAndShip 
+              isAuthenticated={isAuthenticated}
+              connectWallet={connectWallet}
+              userSession={userSession}
+            />
+          }
+        />
+        <Route path="/deploy"
           element={
             <StacksClickAndShip 
               isAuthenticated={isAuthenticated}

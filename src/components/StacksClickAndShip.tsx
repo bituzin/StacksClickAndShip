@@ -171,7 +171,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
     { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
-    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' }
+    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' },
+    { id: 'deploy', label: 'Deploy', icon: Plus, to: '/deploy' }
   ];
 
   // Synchronizuj activeTab z aktualną ścieżką
@@ -188,7 +189,39 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       setActiveTab('learn');
     } else if (path.startsWith('/getname')) {
       setActiveTab('getname');
+    } else if (path.startsWith('/deploy')) {
+      setActiveTab('deploy');
     }
+          {/* Deploy Panel */}
+          {activeTab === 'deploy' && path.startsWith('/deploy') && (
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                    <Plus className="text-yellow-400 inline align-middle" size={40} />
+                    <span>Deploy</span>
+                  </h2>
+                  <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
+                </div>
+                <div className="mb-6">
+                  <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
+                  <textarea
+                    className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
+                    placeholder=";; Paste your Clarity contract code here..."
+                    spellCheck={false}
+                    rows={16}
+                    // value and onChange can be wired up to state for real deployment
+                  />
+                </div>
+                <button
+                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled
+                >
+                  Deploy (coming soon)
+                </button>
+              </div>
+            </div>
+          )}
   }, [path]);
 
   // Sprawdź nazwę przy wejściu na zakładkę getname
@@ -497,7 +530,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex flex-col items-start">
             <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
-            <p className="text-base text-orange-300 italic">* GM, post, vote, learn...</p>
+            <p className="text-base text-orange-300 italic">* GM, post, vote, learn, deploy...</p>
           </div>
           {isWalletConnectedViaHiro ? (
             <div className="flex items-center gap-3">
@@ -587,11 +620,40 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
+                {activeTab === 'deploy' && path.startsWith('/deploy') && (
+                  <div className="max-w-2xl mx-auto">
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+                      <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                          <Plus className="text-yellow-400 inline align-middle" size={40} />
+                          <span>Deploy</span>
+                        </h2>
+                        <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
+                      </div>
+                      <div className="mb-6">
+                        <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
+                        <textarea
+                          className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
+                          placeholder=";; Paste your Clarity contract code here..."
+                          spellCheck={false}
+                          rows={16}
+                          // value and onChange can be wired up to state for real deployment
+                        />
+                      </div>
+                      <button
+                        className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                      >
+                        Deploy (coming soon)
+                      </button>
+                    </div>
+                  </div>
+                )}
         {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-2xl text-white mb-2">Welcome to Stacks - Click and Ship</h2>
-              <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn...</p>
+              <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn, deploy...</p>
               <p className="text-orange-200 text-lg mb-8">
                 Your all-in-one toolkit for the Stacks blockchain. Say GM, send messages, create vote, and learn about Stacks basics - all in one place.
               </p>
@@ -617,6 +679,12 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
+                </Link>
+
+                <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                  <Plus className="text-yellow-400 mb-3" size={32} />
+                  <h3 className="text-xl text-white mb-2">Deploy</h3>
+                  <p className="text-orange-300">Deploy and manage smart contracts</p>
                 </Link>
               </div>
 
