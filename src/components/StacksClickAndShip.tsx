@@ -201,8 +201,24 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                     <Plus className="text-yellow-400 inline align-middle" size={40} />
                     <span>Deploy</span>
                   </h2>
-                  <p className="text-orange-300">Panel for contract deployment and management (coming soon).</p>
+                  <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
                 </div>
+                <div className="mb-6">
+                  <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
+                  <textarea
+                    className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
+                    placeholder=";; Paste your Clarity contract code here..."
+                    spellCheck={false}
+                    rows={16}
+                    // value and onChange can be wired up to state for real deployment
+                  />
+                </div>
+                <button
+                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled
+                >
+                  Deploy (coming soon)
+                </button>
               </div>
             </div>
           )}
