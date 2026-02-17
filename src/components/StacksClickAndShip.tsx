@@ -168,8 +168,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Only non-home menu items for top nav
   // Menu bez Home i GM do górnego menu
   // Menu bez Home, GM, Vote do górnego menu
+  // Menu bez Home, GM, Vote, Send Message do górnego menu
   const menuItems = [
-    { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
     { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' },
     { id: 'deploy', label: 'Deploy', icon: Plus, to: '/deploy' }
@@ -629,6 +629,18 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         >
           <CheckSquare size={32} />
           <span className="text-xs mt-1 font-semibold">Vote</span>
+        </Link>
+        <Link
+          to="/message"
+          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+            activeTab === 'message'
+              ? 'bg-orange-600 text-white shadow-lg scale-110'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <MessageSquare size={32} />
+          <span className="text-xs mt-1 font-semibold">Send</span>
         </Link>
       </div>
 
