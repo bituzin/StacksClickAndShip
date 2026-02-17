@@ -165,8 +165,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   }, [checkUserName]);
 
   // Menu items (moved from legacy root file)
+  // Only non-home menu items for top nav
   const menuItems = [
-    { id: 'home', label: 'Home', icon: Home, to: '/' },
     { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
     { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
     { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
@@ -592,8 +592,24 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-orange-950/50 backdrop-blur-sm border-b border-orange-500/20">
+      {/* Sidebar Home Menu */}
+      <div className="fixed top-0 left-0 h-full w-20 bg-orange-950/80 flex flex-col items-center py-8 z-40 shadow-xl">
+        <Link
+          to="/"
+          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+            activeTab === 'home'
+              ? 'bg-orange-600 text-white shadow-lg scale-110'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Home size={32} />
+          <span className="text-xs mt-1 font-semibold">Home</span>
+        </Link>
+      </div>
+
+      {/* Navigation Menu (top, without Home) */}
+      <nav className="bg-orange-950/50 backdrop-blur-sm border-b border-orange-500/20 ml-20">
         <div className="container mx-auto px-6">
           <div className="flex justify-center space-x-1">
             {menuItems.map((item) => {
@@ -619,7 +635,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-12">
+      <main className="container mx-auto px-6 py-12 ml-20">
                 {activeTab === 'deploy' && path.startsWith('/deploy') && (
                   <div className="max-w-2xl mx-auto">
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
