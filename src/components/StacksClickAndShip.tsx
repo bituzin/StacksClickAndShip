@@ -591,10 +591,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </header>
 
       {/* Sidebar Home Menu */}
-      <div className="fixed top-0 left-0 h-full w-20 bg-orange-950/80 flex flex-col items-center py-8 z-40 shadow-xl">
+      <div className="fixed top-0 left-0 h-full w-48 bg-orange-950/80 flex flex-col items-start py-8 z-40 shadow-xl">
         <Link
           to="/"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 mt-[69px] ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 mt-[69px] w-full text-left ${
             activeTab === 'home'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -602,11 +602,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <Home size={32} />
-          <span className="text-xs mt-1 font-semibold">Home</span>
+          <span className="text-base font-semibold">Home</span>
         </Link>
         <Link
           to="/gm"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'gm'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -614,11 +614,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <Sun size={32} />
-          <span className="text-xs mt-1 font-semibold">GM</span>
+          <span className="text-base font-semibold">GM</span>
         </Link>
         <Link
           to="/vote"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'vote'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -626,11 +626,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <CheckSquare size={32} />
-          <span className="text-xs mt-1 font-semibold">Vote</span>
+          <span className="text-base font-semibold">Vote</span>
         </Link>
         <Link
           to="/message"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'message'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -638,11 +638,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <MessageSquare size={32} />
-          <span className="text-xs mt-1 font-semibold">Send</span>
+          <span className="text-base font-semibold">Send</span>
         </Link>
         <Link
           to="/getname"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'getname'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -650,11 +650,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <User size={32} />
-          <span className="text-xs mt-1 font-semibold">Get Name</span>
+          <span className="text-base font-semibold">Get Name</span>
         </Link>
         <Link
           to="/deploy"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'deploy'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -662,11 +662,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <Plus size={32} />
-          <span className="text-xs mt-1 font-semibold">Deploy</span>
+          <span className="text-base font-semibold">Deploy</span>
         </Link>
         <Link
           to="/learn"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'learn'
               ? 'bg-orange-800/70 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
@@ -674,7 +674,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           style={{ textDecoration: 'none' }}
         >
           <BookOpen size={32} />
-          <span className="text-xs mt-1 font-semibold">Learn</span>
+          <span className="text-base font-semibold">Learn</span>
         </Link>
       </div>
 
