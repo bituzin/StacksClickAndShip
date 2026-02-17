@@ -596,7 +596,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       <div className="fixed top-0 left-0 h-full w-20 bg-orange-950/80 flex flex-col items-center py-8 z-40 shadow-xl">
         <Link
           to="/"
-          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 mt-24 ${
             activeTab === 'home'
               ? 'bg-orange-600 text-white shadow-lg scale-110'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
