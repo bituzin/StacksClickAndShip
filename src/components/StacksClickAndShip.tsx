@@ -170,9 +170,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Menu bez Home, GM, Vote do górnego menu
   // Menu bez Home, GM, Vote, Send Message do górnego menu
   // Menu bez Home, GM, Vote, Send, GetName do górnego menu
+  // Menu bez Home, GM, Vote, Send, GetName, Deploy do górnego menu
   const menuItems = [
-    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
-    { id: 'deploy', label: 'Deploy', icon: Plus, to: '/deploy' }
+    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' }
   ];
 
   // Synchronizuj activeTab z aktualną ścieżką
@@ -653,6 +653,18 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         >
           <User size={32} />
           <span className="text-xs mt-1 font-semibold">Get Name</span>
+        </Link>
+        <Link
+          to="/deploy"
+          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+            activeTab === 'deploy'
+              ? 'bg-orange-600 text-white shadow-lg scale-110'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Plus size={32} />
+          <span className="text-xs mt-1 font-semibold">Deploy</span>
         </Link>
       </div>
 
