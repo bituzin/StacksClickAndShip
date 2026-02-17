@@ -167,8 +167,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Menu items (moved from legacy root file)
   // Only non-home menu items for top nav
   // Menu bez Home i GM do górnego menu
+  // Menu bez Home, GM, Vote do górnego menu
   const menuItems = [
-    { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
     { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
     { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
     { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' },
@@ -617,6 +617,18 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         >
           <Sun size={32} />
           <span className="text-xs mt-1 font-semibold">GM</span>
+        </Link>
+        <Link
+          to="/vote"
+          className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 ${
+            activeTab === 'vote'
+              ? 'bg-orange-600 text-white shadow-lg scale-110'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <CheckSquare size={32} />
+          <span className="text-xs mt-1 font-semibold">Vote</span>
         </Link>
       </div>
 
