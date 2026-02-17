@@ -529,8 +529,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       <header className="bg-black/30 backdrop-blur-sm border-b border-orange-500/30">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex flex-col items-start">
-            <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
-            <p className="text-base text-orange-300 italic">* GM, post, vote, learn, deploy...</p>
+            <h1 className="text-2xl text-white mb-1 ml-24">Stacks - Click and Ship</h1>
+            <p className="text-base text-orange-300 italic ml-24">* GM, post, vote, learn, deploy...</p>
           </div>
           {isWalletConnectedViaHiro ? (
             <div className="flex items-center gap-3">
