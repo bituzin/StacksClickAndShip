@@ -591,7 +591,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </header>
 
       {/* Sidebar Home Menu */}
-      <div className="fixed top-24 left-0 h-[calc(100%-6rem)] w-20 bg-orange-950/80 flex flex-col items-center py-8 z-40 shadow-xl">
+      <div className="fixed top-0 left-0 h-full w-20 bg-orange-950/80 flex flex-col items-center py-8 z-40 shadow-xl">
         <Link
           to="/"
           className={`flex flex-col items-center justify-center mb-4 p-3 rounded-xl transition-all duration-200 mt-24 ${
