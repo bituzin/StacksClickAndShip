@@ -165,15 +165,13 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   }, [checkUserName]);
 
   // Menu items (moved from legacy root file)
-  const menuItems = [
-    { id: 'home', label: 'Home', icon: Home, to: '/' },
-    { id: 'gm', label: 'GM', icon: Sun, to: '/gm' },
-    { id: 'vote', label: 'Vote', icon: CheckSquare, to: '/vote' },
-    { id: 'message', label: 'Send Message', icon: MessageSquare, to: '/message' },
-    { id: 'learn', label: 'Learn', icon: BookOpen, to: '/learn' },
-    { id: 'getname', label: 'Get Your Name', icon: User, to: '/getname' },
-    { id: 'deploy', label: 'Deploy', icon: Plus, to: '/deploy' }
-  ];
+  // Only non-home menu items for top nav
+  // Menu bez Home i GM do górnego menu
+  // Menu bez Home, GM, Vote do górnego menu
+  // Menu bez Home, GM, Vote, Send Message do górnego menu
+  // Menu bez Home, GM, Vote, Send, GetName do górnego menu
+  // Wszystkie przyciski są teraz w sidebarze, górne menu puste
+  const menuItems = [];
 
   // Synchronizuj activeTab z aktualną ścieżką
   React.useEffect(() => {
@@ -529,8 +527,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       <header className="bg-black/30 backdrop-blur-sm border-b border-orange-500/30">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex flex-col items-start">
-            <h1 className="text-2xl text-white mb-1">Stacks - Click and Ship</h1>
-            <p className="text-base text-orange-300 italic">* GM, post, vote, learn, deploy...</p>
+            <h1 className="text-2xl text-white mb-1 ml-56">Stacks - Click and Ship</h1>
+            <p className="text-base text-orange-300 italic ml-56">* GM, post, vote, learn, deploy...</p>
           </div>
           {isWalletConnectedViaHiro ? (
             <div className="flex items-center gap-3">
@@ -592,8 +590,96 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-orange-950/50 backdrop-blur-sm border-b border-orange-500/20">
+      {/* Sidebar Home Menu */}
+      <div className="fixed top-0 left-0 h-full w-48 bg-orange-950/80 flex flex-col items-start py-8 z-40 shadow-xl">
+        <Link
+          to="/"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 mt-[84px] w-full text-left ${
+            activeTab === 'home'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Home size={32} />
+          <span className="text-base font-semibold">Home</span>
+        </Link>
+        <Link
+          to="/gm"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'gm'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Sun size={32} />
+          <span className="text-base font-semibold">GM</span>
+        </Link>
+        <Link
+          to="/vote"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'vote'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <CheckSquare size={32} />
+          <span className="text-base font-semibold">Vote</span>
+        </Link>
+        <Link
+          to="/message"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'message'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <MessageSquare size={32} />
+          <span className="text-base font-semibold">Send</span>
+        </Link>
+        <Link
+          to="/getname"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'getname'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <User size={32} />
+          <span className="text-base font-semibold">Get Name</span>
+        </Link>
+        <Link
+          to="/deploy"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'deploy'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Plus size={32} />
+          <span className="text-base font-semibold">Deploy</span>
+        </Link>
+        <Link
+          to="/learn"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+            activeTab === 'learn'
+              ? 'bg-orange-800/70 text-white shadow-lg'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <BookOpen size={32} />
+          <span className="text-base font-semibold">Learn</span>
+        </Link>
+      </div>
+
+      {/* Navigation Menu (top, without Home) */}
+      <nav className="bg-orange-950/50 backdrop-blur-sm border-b border-orange-500/20 ml-20">
         <div className="container mx-auto px-6">
           <div className="flex justify-center space-x-1">
             {menuItems.map((item) => {
@@ -619,7 +705,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-12">
+      <main className="container mx-auto px-6 py-12 ml-20">
                 {activeTab === 'deploy' && path.startsWith('/deploy') && (
                   <div className="max-w-2xl mx-auto">
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
