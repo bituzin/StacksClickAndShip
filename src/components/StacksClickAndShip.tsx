@@ -596,7 +596,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 mt-[69px] w-full text-left ${
             activeTab === 'home'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -608,7 +608,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/gm"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'gm'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -620,7 +620,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/vote"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'vote'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -632,7 +632,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/message"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'message'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -644,7 +644,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/getname"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'getname'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -656,7 +656,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/deploy"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'deploy'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
@@ -668,7 +668,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           to="/learn"
           className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
             activeTab === 'learn'
-              ? 'bg-orange-800/70 text-white shadow-lg scale-110'
+              ? 'bg-orange-800/70 text-white shadow-lg'
               : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
           }`}
           style={{ textDecoration: 'none' }}
