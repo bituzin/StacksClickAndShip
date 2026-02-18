@@ -1210,8 +1210,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               )}
 
               {showCreateVoteModal && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                  <div className="bg-gradient-to-br from-orange-900/95 to-purple-900/95 backdrop-blur-xl rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-orange-500/30 shadow-2xl">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-gradient-to-br from-orange-900/95 to-purple-900/95 backdrop-blur-xl rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="text-2xl font-bold text-white">Create New Vote</h3>
                       <button
