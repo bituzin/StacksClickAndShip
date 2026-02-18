@@ -683,7 +683,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-12 ml-20">
+      <main className="container mx-auto px-6 py-12 ml-52">
                 {activeTab === 'deploy' && path.startsWith('/deploy') && (
                   <div className="max-w-2xl mx-auto">
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
@@ -1006,7 +1006,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         )}
 
         {activeTab === 'vote' && path.startsWith('/vote') && (
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               {/* Header z przyciskiem */}
               <div className="flex justify-between items-center mb-6">
@@ -1658,7 +1658,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         )}
 
         {activeTab === 'learn' && path.startsWith('/learn') && !/^\/learn\/[\w-]+$/.test(path) && (
-          <LearnCard />
+          <div className="max-w-4xl mx-auto">
+            <LearnCard />
+          </div>
         )}
       </main>
 
