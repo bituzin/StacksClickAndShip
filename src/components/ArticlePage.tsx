@@ -301,7 +301,7 @@ export default function ArticlePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-pink-900">
         <div className="container mx-auto px-6 py-12">
-          <div className="max-w-md mx-auto text-center bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30">
+          <div className="max-w-md mx-auto text-center bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30">
             <h2 className="text-3xl font-bold text-white mb-4">Article not found</h2>
             <p className="text-purple-200 mb-6">The article you're looking for doesn't exist.</p>
             <Link 
@@ -327,7 +327,7 @@ export default function ArticlePage() {
             &larr; Back to Learn
           </Link>
           
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-4xl font-bold text-white mb-2">{article.title}</h1>
@@ -339,7 +339,7 @@ export default function ArticlePage() {
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-purple-500/30">
+            <div className="mt-8 pt-6 border-t border-orange-500/30">
               <Link 
                 to="/learn" 
                 className="inline-block bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white py-3 px-8 rounded-full transition-all shadow-lg hover:shadow-xl"

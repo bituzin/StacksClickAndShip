@@ -859,7 +859,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'message' && path.startsWith('/message') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-6 flex items-center justify-center gap-3">
                 <Mail className="inline text-amber-400 align-middle" size={32} />
                 <span>Post Message On-Chain</span>
@@ -1545,7 +1545,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'getname' && path.startsWith('/getname') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
               {isConfirmingUsername && (
                 <div className="text-orange-300 text-sm text-center mb-4">Waiting for blockchain confirmation...</div>
