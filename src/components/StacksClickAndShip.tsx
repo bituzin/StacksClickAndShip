@@ -681,7 +681,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-12 ml-52">
+      <main className="container mx-auto px-6 py-12 pl-52">
                 {activeTab === 'deploy' && path.startsWith('/deploy') && (
                   <div className="max-w-2xl mx-auto">
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
