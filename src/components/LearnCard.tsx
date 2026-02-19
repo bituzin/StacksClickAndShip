@@ -12,14 +12,14 @@ export default function LearnCard() {
   ];
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-purple-500/30 shadow-2xl">
+    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
       <h2 className="text-3xl font-bold text-white mb-6">📚 Learn Stacks</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tutorials.map((tutorial, idx) => (
           <Link
             key={idx}
             to={`/learn/${tutorial.slug}`}
-            className="bg-purple-900/40 rounded-xl p-6 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer block"
+            className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer block"
             style={{ textDecoration: 'none' }}
           >
             <div className="flex justify-between items-start mb-3">
