@@ -1,4 +1,3 @@
-import React from 'react';
 import { Mail } from 'lucide-react';
 
 interface MessageLeaderboardRow {
@@ -95,7 +94,8 @@ export default function PostMessageCard({
 
             try {
               const { stringAsciiCV } = await import('@stacks/transactions');
-              const { openContractCall, StacksMainnet } = await import('@stacks/connect');
+              const { openContractCall } = await import('@stacks/connect');
+              const { StacksMainnet } = await import('@stacks/network');
 
               await openContractCall({
                 network: new StacksMainnet(),
