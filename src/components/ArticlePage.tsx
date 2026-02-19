@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useState, useEffect } from 'react';
 import remarkGfm from 'remark-gfm';
 
 const articles = {
@@ -293,9 +294,25 @@ Stacking is ideal for people who:
   }
 };
 
+
+
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
   const article = slug ? articles[slug as keyof typeof articles] : undefined;
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  // Simulate loading if fetching from API
+  setLoading(false);
+}, [slug]);
+
+if (loading) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-pink-900 flex items-center justify-center">
+      <div className="text-white text-xl">Loading...</div>
+    </div>
+  );
+}
 
   if (!article) {
     return (
