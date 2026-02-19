@@ -301,7 +301,7 @@ export default function ArticlePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-pink-900">
         <div className="container mx-auto px-6 py-12">
-          <div className="max-w-md mx-auto text-center bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30">
+          <div className="max-w-2xl mx-auto text-center bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30">
             <h2 className="text-3xl font-bold text-white mb-4">Article not found</h2>
             <p className="text-purple-200 mb-6">The article you're looking for doesn't exist.</p>
             <Link 
@@ -319,7 +319,7 @@ export default function ArticlePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-900 via-purple-900 to-pink-900">
       <div className="container mx-auto px-6 py-12">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-2xl mx-auto">
           <Link 
             to="/learn" 
             className="inline-flex items-center text-purple-300 hover:text-purple-100 mb-6 transition-colors"
