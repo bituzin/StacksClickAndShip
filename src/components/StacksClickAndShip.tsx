@@ -8,8 +8,6 @@ import { callReadOnlyFunction } from '@stacks/transactions';
 import { StacksMainnet } from '@stacks/network';
 import SayGMCard from './SayGMCard';
 import GetNameCard from './GetNameCard';
-import VoteCard from './VoteCard';
-import PostMessageCard from './PostMessageCard';
 import LearnCard from './LearnCard';
 
 
@@ -54,13 +52,13 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   const [inputName, setInputName] = useState('');
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [isConfirmingUsername, setIsConfirmingUsername] = useState(false);
+  const [isConfirmingUsername] = useState(false);
 
   // AppKit/Wallet
-  const [appKitAddress, setAppKitAddress] = useState<string | null>(null);
+  const [appKitAddress] = useState<string | null>(null);
   const [persistedAppKitAddress, setPersistedAppKitAddress] = useState<string | null>(null);
-  const [isWalletConnectedViaHiro, setIsWalletConnectedViaHiro] = useState(false);
-  const [isWalletConnectedViaAppKit, setIsWalletConnectedViaAppKit] = useState(false);
+  const [isWalletConnectedViaHiro] = useState(false);
+  const [isWalletConnectedViaAppKit] = useState(false);
   const [userAddress, setUserAddress] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -149,7 +147,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Menu bez Home, GM, Vote, Send Message do górnego menu
   // Menu bez Home, GM, Vote, Send, GetName do górnego menu
   // Wszystkie przyciski są teraz w sidebarze, górne menu puste
-  const menuItems = [];
+  const menuItems: any[] = [];
 
   // Synchronizuj activeTab z aktualną ścieżką
   React.useEffect(() => {

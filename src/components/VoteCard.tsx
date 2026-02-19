@@ -1,4 +1,4 @@
-port React from 'react';
+import React from 'react';
 import { openContractCall } from '@stacks/connect';
 import { StacksMainnet } from '@stacks/network';
 
