@@ -1,3 +1,15 @@
+        <Link
+          to="/mystats"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
+            activeTab === 'mystats'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <User size={32} />
+          <span className="text-base font-semibold">My Stats</span>
+        </Link>
 
 
 import React from 'react';
