@@ -170,6 +170,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     }
     if (path === '/') {
       setActiveTab('home');
+    } else if (path === '/mystats') {
+      setActiveTab('mystats');
     } else if (path.startsWith('/gm')) {
       setActiveTab('gm');
     } else if (path.startsWith('/vote')) {
