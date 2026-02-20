@@ -1,6 +1,21 @@
+// ...existing code...
+// Przenieś poniższy fragment do sidebaru w funkcji komponentu:
+// <Link
+//   to="/mystats"
+//   className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
+//     activeTab === 'mystats'
+//       ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+//       : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
+//   }`}
+//   style={{ textDecoration: 'none' }}
+// >
+//   <User size={32} />
+//   <span className="text-base font-semibold">My Stats</span>
+// </Link>
 
 
 import React from 'react';
+import MyStatsCard from './MyStatsCard';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User, Plus } from 'lucide-react';
 import { openContractCall } from '@stacks/connect';
@@ -23,13 +38,13 @@ import { useMessageStats } from '../hooks/useMessageStats';
 const APPKIT_STORAGE_KEY = 'stacks_appkit_address';
 
 function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any }) {
-  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession } = props || {};
+  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession, activeTabOverride } = props || {};
   // Routing
   const location = useLocation();
   const path = location.pathname;
 
   // Zakładki
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(activeTabOverride || 'home');
 
   // Popupy i modale
   const [txPopup, setTxPopup] = useState<any>(null);
@@ -151,8 +166,14 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
   // Synchronizuj activeTab z aktualną ścieżką
   React.useEffect(() => {
+    if (activeTabOverride) {
+      setActiveTab(activeTabOverride);
+      return;
+    }
     if (path === '/') {
       setActiveTab('home');
+    } else if (path === '/mystats') {
+      setActiveTab('mystats');
     } else if (path.startsWith('/gm')) {
       setActiveTab('gm');
     } else if (path.startsWith('/vote')) {
@@ -166,37 +187,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     } else if (path.startsWith('/deploy')) {
       setActiveTab('deploy');
     }
-          {/* Deploy Panel */}
-          {activeTab === 'deploy' && path.startsWith('/deploy') && (
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                    <Plus className="text-yellow-400 inline align-middle" size={40} />
-                    <span>Deploy</span>
-                  </h2>
-                  <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
-                </div>
-                <div className="mb-6">
-                  <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
-                  <textarea
-                    className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
-                    placeholder=";; Paste your Clarity contract code here..."
-                    spellCheck={false}
-                    rows={16}
-                    // value and onChange can be wired up to state for real deployment
-                  />
-                </div>
-                <button
-                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled
-                >
-                  Deploy (coming soon)
-                </button>
-              </div>
-            </div>
-          )}
-  }, [path]);
+  }, [path, activeTabOverride]);
 
   // Sprawdź nazwę przy wejściu na zakładkę getname
   React.useEffect(() => {
@@ -567,13 +558,13 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       </header>
 
       {/* Sidebar Home Menu */}
-      <div className="top-0 left-0 h-full w-48 bg-orange-950/80 flex flex-col items-start py-8 z-40 shadow-xl">
+      <div className="fixed top-0 left-0 h-full w-48 bg-orange-950/80 flex flex-col items-start py-8 z-40 shadow-xl">
         <Link
           to="/"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 mt-[84px] w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 mt-[56px] w-full text-left ${
             activeTab === 'home'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -581,11 +572,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           <span className="text-base font-semibold">Home</span>
         </Link>
         <Link
+          to="/mystats"
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
+            activeTab === 'mystats'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
+          }`}
+          style={{ textDecoration: 'none' }}
+        >
+          <User size={32} />
+          <span className="text-base font-semibold">My Stats</span>
+        </Link>
+        <Link
           to="/gm"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'gm'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -594,10 +597,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </Link>
         <Link
           to="/vote"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'vote'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -606,10 +609,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </Link>
         <Link
           to="/message"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'message'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -618,10 +621,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </Link>
         <Link
           to="/getname"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'getname'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -630,10 +633,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </Link>
         <Link
           to="/deploy"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'deploy'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -642,10 +645,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         </Link>
         <Link
           to="/learn"
-          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 rounded-xl transition-all duration-200 w-full text-left ${
+          className={`flex flex-row items-center justify-start gap-3 mb-4 p-3 transition-all duration-200 w-full text-left ${
             activeTab === 'learn'
-              ? 'bg-orange-800/70 text-white shadow-lg'
-              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white'
+              ? 'bg-orange-800/70 text-white shadow-lg rounded-none'
+              : 'text-orange-300 hover:bg-orange-800/70 hover:text-white rounded-none'
           }`}
           style={{ textDecoration: 'none' }}
         >
@@ -682,35 +685,38 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12 pl-52">
-                {activeTab === 'deploy' && path.startsWith('/deploy') && (
-                  <div className="max-w-2xl mx-auto">
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-                      <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                          <Plus className="text-yellow-400 inline align-middle" size={40} />
-                          <span>Deploy</span>
-                        </h2>
-                        <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
-                      </div>
-                      <div className="mb-6">
-                        <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
-                        <textarea
-                          className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
-                          placeholder=";; Paste your Clarity contract code here..."
-                          spellCheck={false}
-                          rows={16}
-                          // value and onChange can be wired up to state for real deployment
-                        />
-                      </div>
-                      <button
-                        className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled
-                      >
-                        Deploy (coming soon)
-                      </button>
-                    </div>
-                  </div>
-                )}
+        {activeTab === 'mystats' && path === '/mystats' && (
+          <MyStatsCard />
+        )}
+        {activeTab === 'deploy' && path.startsWith('/deploy') && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                  <Plus className="text-yellow-400 inline align-middle" size={40} />
+                  <span>Deploy</span>
+                </h2>
+                <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
+              </div>
+              <div className="mb-6">
+                <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
+                <textarea
+                  className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
+                  placeholder=";; Paste your Clarity contract code here..."
+                  spellCheck={false}
+                  rows={16}
+                  // value and onChange can be wired up to state for real deployment
+                />
+              </div>
+              <button
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+              >
+                Deploy (coming soon)
+              </button>
+            </div>
+          </div>
+        )}
         {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
@@ -719,38 +725,30 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               <p className="text-orange-200 text-lg mb-8">
                 Your all-in-one toolkit for the Stacks blockchain. Say GM, send messages, create vote, and learn about Stacks basics - all in one place.
               </p>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SayGMCard />
-
                 <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Mail className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
-
                 <Link to="/vote" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <CheckSquare className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Vote</h3>
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
                 </Link>
-
                 <GetNameCard />
-
                 <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
-
                 <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Plus className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Deploy</h3>
                   <p className="text-orange-300">Deploy and manage smart contracts</p>
                 </Link>
               </div>
-
-
             </div>
           </div>
         )}
