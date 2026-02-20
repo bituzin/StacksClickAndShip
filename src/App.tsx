@@ -11,23 +11,10 @@ const userSession = new UserSession({ appConfig });
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(userSession.isUserSignedIn());
   
-  // Synchronizuj stan po odświeżeniu strony
+  // Sprawdź stan sesji tylko przy pierwszym załadowaniu
   useEffect(() => {
-    const checkAuth = () => {
-      const isSignedIn = userSession.isUserSignedIn();
-      if (isSignedIn !== isAuthenticated) {
-        console.log('🔄 Synchronizing auth state after refresh:', isSignedIn);
-        setIsAuthenticated(isSignedIn);
-      }
-    };
-    
-    // Sprawdź przy montowaniu
-    checkAuth();
-    
-    // Sprawdzaj co sekundę (na wypadek zmian w localStorage)
-    const interval = setInterval(checkAuth, 1000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    setIsAuthenticated(userSession.isUserSignedIn());
+  }, []);
 
   const connectWallet = () => {
     showConnect({
@@ -125,6 +112,16 @@ function App() {
           }
         />
         <Route path="/learn/:slug" element={<ArticlePage />} />
+        <Route path="/mystats"
+          element={
+            <StacksClickAndShip 
+              isAuthenticated={isAuthenticated}
+              connectWallet={connectWallet}
+              userSession={userSession}
+              activeTabOverride="mystats"
+            />
+          }
+        />
       </Routes>
     </div>
   );

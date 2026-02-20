@@ -35,13 +35,13 @@ import { useMessageStats } from '../hooks/useMessageStats';
 const APPKIT_STORAGE_KEY = 'stacks_appkit_address';
 
 function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any }) {
-  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession } = props || {};
+  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession, activeTabOverride } = props || {};
   // Routing
   const location = useLocation();
   const path = location.pathname;
 
   // Zakładki
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(activeTabOverride || 'home');
 
   // Popupy i modale
   const [txPopup, setTxPopup] = useState<any>(null);
@@ -163,6 +163,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
   // Synchronizuj activeTab z aktualną ścieżką
   React.useEffect(() => {
+    if (activeTabOverride) {
+      setActiveTab(activeTabOverride);
+      return;
+    }
     if (path === '/') {
       setActiveTab('home');
     } else if (path.startsWith('/gm')) {
@@ -178,37 +182,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     } else if (path.startsWith('/deploy')) {
       setActiveTab('deploy');
     }
-          {/* Deploy Panel */}
-          {activeTab === 'deploy' && path.startsWith('/deploy') && (
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                    <Plus className="text-yellow-400 inline align-middle" size={40} />
-                    <span>Deploy</span>
-                  </h2>
-                  <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
-                </div>
-                <div className="mb-6">
-                  <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
-                  <textarea
-                    className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
-                    placeholder=";; Paste your Clarity contract code here..."
-                    spellCheck={false}
-                    rows={16}
-                    // value and onChange can be wired up to state for real deployment
-                  />
-                </div>
-                <button
-                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled
-                >
-                  Deploy (coming soon)
-                </button>
-              </div>
-            </div>
-          )}
-  }, [path]);
+  }, [path, activeTabOverride]);
 
   // Sprawdź nazwę przy wejściu na zakładkę getname
   React.useEffect(() => {
@@ -694,35 +668,38 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12 pl-52">
-                {activeTab === 'deploy' && path.startsWith('/deploy') && (
-                  <div className="max-w-2xl mx-auto">
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-                      <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-                          <Plus className="text-yellow-400 inline align-middle" size={40} />
-                          <span>Deploy</span>
-                        </h2>
-                        <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
-                      </div>
-                      <div className="mb-6">
-                        <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
-                        <textarea
-                          className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
-                          placeholder=";; Paste your Clarity contract code here..."
-                          spellCheck={false}
-                          rows={16}
-                          // value and onChange can be wired up to state for real deployment
-                        />
-                      </div>
-                      <button
-                        className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled
-                      >
-                        Deploy (coming soon)
-                      </button>
-                    </div>
-                  </div>
-                )}
+        {activeTab === 'mystats' && path === '/mystats' && (
+          <MyStatsCard />
+        )}
+        {activeTab === 'deploy' && path.startsWith('/deploy') && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                  <Plus className="text-yellow-400 inline align-middle" size={40} />
+                  <span>Deploy</span>
+                </h2>
+                <p className="text-orange-300 mb-6">Paste your Clarity smart contract code below and deploy to Stacks.</p>
+              </div>
+              <div className="mb-6">
+                <label className="block text-orange-200 mb-2 font-semibold text-left">Contract code (.clar):</label>
+                <textarea
+                  className="w-full h-64 bg-black/60 text-orange-100 rounded-lg p-4 font-mono text-sm border border-orange-500/30 focus:border-orange-400 outline-none resize-vertical"
+                  placeholder=";; Paste your Clarity contract code here..."
+                  spellCheck={false}
+                  rows={16}
+                  // value and onChange can be wired up to state for real deployment
+                />
+              </div>
+              <button
+                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+              >
+                Deploy (coming soon)
+              </button>
+            </div>
+          </div>
+        )}
         {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
@@ -731,38 +708,30 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               <p className="text-orange-200 text-lg mb-8">
                 Your all-in-one toolkit for the Stacks blockchain. Say GM, send messages, create vote, and learn about Stacks basics - all in one place.
               </p>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SayGMCard />
-
                 <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Mail className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
-
                 <Link to="/vote" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <CheckSquare className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Vote</h3>
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
                 </Link>
-
                 <GetNameCard />
-
                 <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
-
                 <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Plus className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Deploy</h3>
                   <p className="text-orange-300">Deploy and manage smart contracts</p>
                 </Link>
               </div>
-
-
             </div>
           </div>
         )}
