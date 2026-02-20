@@ -13,6 +13,7 @@
 
 
 import React from 'react';
+import MyStatsCard from './MyStatsCard';
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, MessageSquare, CheckSquare, BookOpen, Home, Mail, X, User, Plus } from 'lucide-react';
 import { openContractCall } from '@stacks/connect';
