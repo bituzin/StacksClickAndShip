@@ -686,7 +686,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12 pl-52">
         {activeTab === 'mystats' && path === '/mystats' && (
-          <MyStatsCard />
+          <MyStatsCard userAddress={userAddress || persistedAppKitAddress} />
         )}
         {activeTab === 'deploy' && path.startsWith('/deploy') && (
           <div className="max-w-2xl mx-auto">
