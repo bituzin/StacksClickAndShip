@@ -38,7 +38,7 @@ export const modal = createAppKit({
     swaps: false,
     onramp: false
   },
-  enableAutoConnect: false,
+  enableReconnect: false,
   enableWalletConnect: true,
   enableInjected: false,
   enableCoinbase: false,
