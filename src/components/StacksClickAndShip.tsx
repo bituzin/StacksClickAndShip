@@ -72,8 +72,6 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // AppKit/Wallet
   const [appKitAddress] = useState<string | null>(null);
   const [persistedAppKitAddress, setPersistedAppKitAddress] = useState<string | null>(null);
-  const [isWalletConnectedViaHiro] = useState(false);
-  const [isWalletConnectedViaAppKit] = useState(false);
   const [userAddress, setUserAddress] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -331,30 +329,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     });
   }
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     if (propUserSession && typeof propUserSession.signUserOut === 'function') {
       propUserSession.signUserOut();
     }
-    window.location.reload();
-  };
-
-  const handleAppKitDisconnect = React.useCallback(async () => {
     try {
       const module = await import('../config/appkit');
       await module.modal.disconnect('bip122');
-    } catch (error) {
-      console.error('Error disconnecting AppKit wallet:', error);
-    } finally {
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(APPKIT_STORAGE_KEY);
-      }
-      setPersistedAppKitAddress(null);
-      if (!isAuthenticated) {
-        setUserAddress(null);
-      }
-      close();
+    } catch (_e) {
+      // ignore
     }
-  }, [close, isAuthenticated]);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(APPKIT_STORAGE_KEY);
+    }
+    setPersistedAppKitAddress(null);
+    setUserAddress(null);
+    window.location.reload();
+  };
 
   const addVoteOption = () => {
     if (voteOptions.length < 10) {
@@ -497,40 +488,24 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
             <h1 className="text-2xl text-white mb-1 ml-56">Stacks - Click and Ship</h1>
             <p className="text-base text-orange-300 italic ml-56">* GM, post, vote, learn, deploy...</p>
           </div>
-          {isWalletConnectedViaHiro ? (
+          {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <span className="text-orange-300 text-sm font-semibold">Connected</span>
               <button
                 type="button"
                 onClick={() => {
-                  if (userAddress) {
-                    window.open(`https://explorer.stacks.co/address/${userAddress}?chain=mainnet`, '_blank');
+                  const addr = userAddress || effectiveAppKitAddress;
+                  if (addr) {
+                    window.open(`https://explorer.stacks.co/address/${addr}?chain=mainnet`, '_blank');
                   }
                 }}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
               >
-                {formatAddress(userAddress)}
+                {formatAddress(userAddress || effectiveAppKitAddress)}
               </button>
               <button
                 onClick={handleDisconnect}
-                className="bg-orange-600/50 hover:bg-orange-600 text-white px-3 py-1 rounded text-sm transition-colors"
-              >
-                Disconnect
-              </button>
-            </div>
-          ) : isWalletConnectedViaAppKit ? (
-            <div className="flex items-center gap-3">
-              <span className="text-orange-300 text-sm font-semibold">Connected</span>
-              <button
-                type="button"
-                onClick={() => open()}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
-              >
-                {formatAddress(effectiveAppKitAddress)}
-              </button>
-              <button
-                onClick={handleAppKitDisconnect}
-                className="bg-blue-600/50 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
               >
                 Disconnect
               </button>
