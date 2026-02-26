@@ -32,12 +32,13 @@ export const modal = createAppKit({
   projectId,
   metadata,
   features: {
-    analytics: true,
+    analytics: false,
     email: false,
     socials: [],
     swaps: false,
     onramp: false
   },
+  enableAutoConnect: false,
   enableWalletConnect: true,
   enableInjected: false,
   enableCoinbase: false,
