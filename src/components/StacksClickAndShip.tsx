@@ -490,7 +490,6 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              <span className="text-orange-300 text-sm font-semibold">Connected</span>
               <button
                 type="button"
                 onClick={() => {
@@ -505,7 +504,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               </button>
               <button
                 onClick={handleDisconnect}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="bg-orange-800 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors border border-orange-500/40"
               >
                 Disconnect
               </button>
