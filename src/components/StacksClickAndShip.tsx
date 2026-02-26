@@ -37,7 +37,7 @@ import { useMessageStats } from '../hooks/useMessageStats';
 
 const APPKIT_STORAGE_KEY = 'stacks_appkit_address';
 
-function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any }) {
+function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any; activeTabOverride?: string }) {
   const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession, activeTabOverride } = props || {};
   // Routing
   const location = useLocation();
