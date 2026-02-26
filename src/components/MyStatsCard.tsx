@@ -1,4 +1,3 @@
-import React from 'react';
 import { Sun, CheckSquare, MessageSquare, User, Wallet } from 'lucide-react';
 
 export default function MyStatsCard({ userAddress }: { userAddress?: string | null }) {
