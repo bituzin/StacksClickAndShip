@@ -123,7 +123,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         setCurrentUsername(null);
         return;
       }
-      const { callReadOnlyFunction, principalCV, cvToString, ClarityType } = await import('@stacks/transactions');
+      const { callReadOnlyFunction, principalCV, cvToString } = await import('@stacks/transactions');
       const res = await callReadOnlyFunction({
         contractAddress: GET_NAME_CONTRACT_ADDRESS,
         contractName: GET_NAME_CONTRACT_NAME,
