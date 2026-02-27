@@ -52,6 +52,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [showTakenPopup, setShowTakenPopup] = useState(false);
   const [showAvailablePopup, setShowAvailablePopup] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   // Głosowania
   const [voteTitle, setVoteTitle] = useState('');
@@ -113,7 +114,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Pozostałe funkcje i logika z pliku...
   // ...
 
-  // Safe placeholder for checking username. Restores missing function to avoid runtime errors.
+  // Pobierz username z kontraktu
   const checkUserName = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setIsCheckingUsername(true);
     try {
@@ -122,10 +123,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         setCurrentUsername(null);
         return;
       }
-
-      // TODO: implement actual read-only call to GET_NAME contract here.
-      // For now, assume no username and avoid throwing errors.
-      setCurrentUsername(null);
+      const { callReadOnlyFunction, principalCV, cvToString, ClarityType } = await import('@stacks/transactions');
+      const res = await callReadOnlyFunction({
+        contractAddress: GET_NAME_CONTRACT_ADDRESS,
+        contractName: GET_NAME_CONTRACT_NAME,
+        functionName: 'get-address-username',
+        functionArgs: [principalCV(addr)],
+        network: new StacksMainnet(),
+        senderAddress: addr,
+      });
+      // SomCV (type 10) zawiera StringAsciiCV
+      const cv = res as any;
+      if (cv?.type === 10 && cv?.value) {
+        const name = typeof cv.value === 'string' ? cv.value : cvToString(cv.value);
+        setCurrentUsername(name.replace(/^"+|"+$/g, ''));
+      } else {
+        setCurrentUsername(null);
+      }
     } catch (e) {
       console.error('checkUserName error:', e);
       setCurrentUsername(null);
@@ -143,10 +157,22 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     }
   }, [propIsAuthenticated]);
 
-  // Pobierz adres użytkownika z userSession
-  // Usunięto automatyczne podłączanie portfela po starcie aplikacji.
-  // Portfel podłączany tylko po kliknięciu przycisku.
-  // ...existing code...
+  // Pobierz adres użytkownika z userSession gdy zalogowany
+  React.useEffect(() => {
+    if (propIsAuthenticated && propUserSession) {
+      try {
+        const userData = propUserSession.loadUserData();
+        const addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
+        setUserAddress(addr);
+        console.log('👛 User address loaded:', addr);
+      } catch (e) {
+        console.error('Error loading user data:', e);
+        setUserAddress(null);
+      }
+    } else if (!propIsAuthenticated) {
+      setUserAddress(null);
+    }
+  }, [propIsAuthenticated, propUserSession]);
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
@@ -490,7 +516,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              {(userAddress || effectiveAppKitAddress) && (
+              {(currentUsername || userAddress || effectiveAppKitAddress) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -501,7 +527,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                   }}
                   className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
                 >
-                  {formatAddress(userAddress || effectiveAppKitAddress)}
+                  {currentUsername ? `${currentUsername}.stacks` : formatAddress(userAddress || effectiveAppKitAddress)}
                 </button>
               )}
               <button
@@ -1588,28 +1614,28 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                   <div style={{ height: '1rem' }} />
                   <div className="flex flex-col items-center gap-3">
                     <button
-                      className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl"
+                      className="rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-6 h-12 font-bold text-base transition-all shadow-lg hover:shadow-xl disabled:opacity-60"
                       style={{ whiteSpace: 'nowrap' }}
+                      disabled={isCheckingAvailability}
                       onClick={async () => {
-                        if (!inputName) return;
+                        if (!inputName.trim()) return;
+                        setIsCheckingAvailability(true);
                         try {
                           const { stringAsciiCV } = await import('@stacks/transactions');
                           const res = await callReadOnlyFunction({
                             contractAddress: GET_NAME_CONTRACT_ADDRESS,
                             contractName: GET_NAME_CONTRACT_NAME,
                             functionName: 'is-username-available',
-                            functionArgs: [stringAsciiCV(inputName)],
+                            functionArgs: [stringAsciiCV(inputName.trim())],
                             network: new StacksMainnet(),
                             senderAddress: userAddress || 'SP000000000000000000002Q6VF78',
                           });
-                          console.log('Response from is-username-available:', res);
-                          console.log('Response type:', (res as any).type);
-                          // Odpowiedź jest bezpośrednio w res, a nie res.value
-                          // type 3 = true (dostępna), type 4 = false (zajęta)
-                          const available = (res as any).type === 3;
-                          console.log('Is available:', available);
-                          
-                          // Pokaż odpowiedni popup
+                          const cv = res as any;
+                          // BoolTrue = type 3, BoolFalse = type 4
+                          // ResponseOkCV = type 7 (wraps the bool)
+                          const rawType = cv?.type === 7 ? cv?.value?.type : cv?.type;
+                          const available = rawType === 3;
+                          console.log('is-username-available raw response:', cv, 'available:', available);
                           if (available) {
                             setShowAvailablePopup(true);
                           } else {
@@ -1617,10 +1643,13 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                           }
                         } catch (e) {
                           console.error('Error checking availability:', e);
+                          alert('Error checking availability. Please try again.');
+                        } finally {
+                          setIsCheckingAvailability(false);
                         }
                       }}
                     >
-                      Check
+                      {isCheckingAvailability ? 'Checking...' : 'Check'}
                     </button>
                   </div>
                 </div>
