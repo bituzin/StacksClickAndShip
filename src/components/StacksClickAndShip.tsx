@@ -113,7 +113,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Pozostałe funkcje i logika z pliku...
   // ...
 
-  // Safe placeholder for checking username. Restores missing function to avoid runtime errors.
+  // Pobierz username z kontraktu
   const checkUserName = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setIsCheckingUsername(true);
     try {
@@ -122,10 +122,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         setCurrentUsername(null);
         return;
       }
-
-      // TODO: implement actual read-only call to GET_NAME contract here.
-      // For now, assume no username and avoid throwing errors.
-      setCurrentUsername(null);
+      const { callReadOnlyFunction, principalCV, cvToString, ClarityType } = await import('@stacks/transactions');
+      const res = await callReadOnlyFunction({
+        contractAddress: GET_NAME_CONTRACT_ADDRESS,
+        contractName: GET_NAME_CONTRACT_NAME,
+        functionName: 'get-address-username',
+        functionArgs: [principalCV(addr)],
+        network: new StacksMainnet(),
+        senderAddress: addr,
+      });
+      // SomCV (type 10) zawiera StringAsciiCV
+      const cv = res as any;
+      if (cv?.type === 10 && cv?.value) {
+        const name = typeof cv.value === 'string' ? cv.value : cvToString(cv.value);
+        setCurrentUsername(name.replace(/^"+|"+$/g, ''));
+      } else {
+        setCurrentUsername(null);
+      }
     } catch (e) {
       console.error('checkUserName error:', e);
       setCurrentUsername(null);
@@ -502,7 +515,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              {(userAddress || effectiveAppKitAddress) && (
+              {(currentUsername || userAddress || effectiveAppKitAddress) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -513,7 +526,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                   }}
                   className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
                 >
-                  {formatAddress(userAddress || effectiveAppKitAddress)}
+                  {currentUsername ? `${currentUsername}.stacks` : formatAddress(userAddress || effectiveAppKitAddress)}
                 </button>
               )}
               <button
