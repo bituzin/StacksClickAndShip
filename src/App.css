@@ -29,6 +29,26 @@ body {
   min-height: 100vh;
 }
 
+/* Hide auto-injected AppKit/Reown connect button widget */
+appkit-button,
+appkit-connect-button,
+appkit-account-button,
+appkit-network-button,
+w3m-button,
+w3m-connect-button,
+w3m-account-button,
+w3m-network-button,
+[data-testid="appkit-button"],
+[data-testid="w3m-button"] {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
+
 /* Force visible spacing for Markdown prose */
 .prose p {
   margin-top: 1.25em;
