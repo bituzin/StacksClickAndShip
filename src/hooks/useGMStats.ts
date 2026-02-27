@@ -105,9 +105,12 @@ export function useGMStats(userAddress: string | null) {
 
       const entries: RecentGmEntry[] = [];
       responses.forEach((res, index) => {
-        const option = (res as any)?.value;
-        if (option?.type !== 10) return;
-        const gm = option.value?.data || option.value;
+        const cv = res as any;
+        // SomCV has type 10, NoneCV has type 9 – skip None
+        if (!cv || cv.type === 9) return;
+        // For SomCV: cv.value is the TupleCV; for plain TupleCV returned directly
+        const tuple = cv.type === 10 ? cv.value : cv;
+        const gm = tuple?.data || tuple;
         if (!gm) return;
         const user = toUserString(gm.user);
         if (!user) return;
