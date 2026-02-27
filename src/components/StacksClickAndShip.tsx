@@ -143,10 +143,22 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     }
   }, [propIsAuthenticated]);
 
-  // Pobierz adres użytkownika z userSession
-  // Usunięto automatyczne podłączanie portfela po starcie aplikacji.
-  // Portfel podłączany tylko po kliknięciu przycisku.
-  // ...existing code...
+  // Pobierz adres użytkownika z userSession gdy zalogowany
+  React.useEffect(() => {
+    if (propIsAuthenticated && propUserSession) {
+      try {
+        const userData = propUserSession.loadUserData();
+        const addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
+        setUserAddress(addr);
+        console.log('👛 User address loaded:', addr);
+      } catch (e) {
+        console.error('Error loading user data:', e);
+        setUserAddress(null);
+      }
+    } else if (!propIsAuthenticated) {
+      setUserAddress(null);
+    }
+  }, [propIsAuthenticated, propUserSession]);
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
