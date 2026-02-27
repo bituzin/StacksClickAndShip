@@ -490,18 +490,20 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const addr = userAddress || effectiveAppKitAddress;
-                  if (addr) {
-                    window.open(`https://explorer.stacks.co/address/${addr}?chain=mainnet`, '_blank');
-                  }
-                }}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
-              >
-                {formatAddress(userAddress || effectiveAppKitAddress)}
-              </button>
+              {(userAddress || effectiveAppKitAddress) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const addr = userAddress || effectiveAppKitAddress;
+                    if (addr) {
+                      window.open(`https://explorer.stacks.co/address/${addr}?chain=mainnet`, '_blank');
+                    }
+                  }}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-mono text-sm transition-colors"
+                >
+                  {formatAddress(userAddress || effectiveAppKitAddress)}
+                </button>
+              )}
               <button
                 onClick={handleDisconnect}
                 className="bg-orange-800 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors border border-orange-500/40"
