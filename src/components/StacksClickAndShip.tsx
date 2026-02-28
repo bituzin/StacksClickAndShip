@@ -688,13 +688,19 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12 pl-52">
         {activeTab === 'mystats' && path === '/mystats' && (
-          <MyStatsCard userAddress={userAddress || persistedAppKitAddress} />
+          <MyStatsCard
+            userAddress={userAddress || persistedAppKitAddress}
+            username={currentUsername}
+            totalGm={userGm}
+            totalVotes={userTotalVotesCast}
+            totalMessages={userMessages}
+          />
         )}
         {activeTab === 'deploy' && path.startsWith('/deploy') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
                   <Plus className="text-yellow-400 inline align-middle" size={40} />
                   <span>Deploy</span>
                 </h2>
@@ -721,7 +727,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         )}
         {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
               <h2 className="text-2xl text-white mb-2">Welcome to Stacks - Click and Ship</h2>
               <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn, deploy...</p>
               <p className="text-orange-200 text-lg mb-8">
@@ -729,23 +735,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SayGMCard />
-                <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/message" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Mail className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
-                <Link to="/vote" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/vote" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <CheckSquare className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Vote</h3>
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
                 </Link>
                 <GetNameCard />
-                <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/learn" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
-                <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/deploy" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Plus className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Deploy</h3>
                   <p className="text-orange-300">Deploy and manage smart contracts</p>
@@ -757,23 +763,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'gm' && path.startsWith('/gm') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
                   <Sun className="text-yellow-400 inline align-middle" size={40} />
                   <span>Say GM to Stacks!</span>
                 </h2>
                 <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">Today's GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">Today's GM</p>
                     <p className="text-white text-3xl font-bold">{todayGm !== null ? todayGm : '...'}</p>
                   </div>
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">Total GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">Total GM</p>
                     <p className="text-white text-3xl font-bold">{totalGm !== null ? totalGm : '...'}</p>
                   </div>
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">My GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">My GM</p>
                     <p className="text-white text-3xl font-bold">{userGm !== null ? userGm : (isAuthenticated ? '...' : '—')}</p>
                   </div>
                 </div>
@@ -790,9 +796,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               {/* Ostatni GM - po polsku, ładna karta */}
               {lastGm && (
                 <div className="mt-6 flex flex-col items-center">
-                  <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full max-w-2xl">
+                  <div className="bg-orange-900/80 border border-orange-500/50 rounded-xl px-6 py-4 shadow-lg w-full max-w-2xl">
                     <div className="flex justify-center mb-2">
-                      <span className="text-orange-400 text-sm font-semibold">Last GM sent by:</span>
+                      <span className="text-orange-300 text-sm font-semibold">Last GM sent by:</span>
                     </div>
                     <div className="text-orange-100 font-mono text-lg whitespace-nowrap overflow-x-auto text-center">
                       {(() => {
@@ -822,9 +828,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <span className="mr-2">📊</span> Leaderboard
                 </h3>
-                <div className="overflow-hidden rounded-lg border border-orange-500/30">
+                <div className="overflow-hidden rounded-lg border border-orange-500/50">
                   <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    <table className="min-w-full bg-orange-900/40">
+                    <table className="min-w-full bg-orange-950/70">
                       <tbody>
                         {leaderboard.length === 0 && (
                           <tr>
@@ -832,7 +838,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                           </tr>
                         )}
                         {leaderboard.map((user, idx) => (
-                          <tr key={user.user} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                          <tr key={user.user} className={idx % 2 === 0 ? "bg-orange-900/70" : "bg-orange-950/50"}>
                             <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
                             <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
                               <a
@@ -845,7 +851,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                                 {user.user.length > 16 ? `${user.user.slice(0, 8)}...${user.user.slice(-6)}` : user.user}
                               </a>
                             </td>
-                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{user.total} GM</td>
+                            <td className="px-4 py-2 text-yellow-400 font-bold text-right">{user.total} GM</td>
                           </tr>
                         ))}
                       </tbody>
@@ -859,24 +865,24 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'message' && path.startsWith('/message') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6 flex items-center justify-center gap-3">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
                 <Mail className="inline text-amber-400 align-middle" size={32} />
                 <span>Post Message On-Chain</span>
               </h2>
               
 
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm font-bold">Today's Messages</p>
+                <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                  <p className="text-orange-300 text-sm font-bold">Today's Messages</p>
                   <p className="text-white text-3xl font-bold">{todayMessages !== null ? todayMessages : '...'}</p>
                 </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm font-bold">Total Messages</p>
+                <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                  <p className="text-orange-300 text-sm font-bold">Total Messages</p>
                   <p className="text-white text-3xl font-bold">{totalMessages !== null ? totalMessages : '...'}</p>
                 </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
-                  <p className="text-orange-400 text-sm font-bold">My Messages</p>
+                <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                  <p className="text-orange-300 text-sm font-bold">My Messages</p>
                   <p className="text-white text-3xl font-bold">{userMessages !== null ? userMessages : (isAuthenticated ? '...' : '—')}</p>
                 </div>
               </div>
@@ -968,8 +974,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <span className="mr-2">📊</span> Leaderboard
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-orange-900/40 rounded-lg">
+                <div className="overflow-hidden rounded-lg border border-orange-500/50">
+                  <div className="overflow-x-auto">
+                  <table className="min-w-full bg-orange-950/70">
                     <tbody>
                       {messageLeaderboard.length === 0 ? (
                         <tr>
@@ -977,7 +984,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                         </tr>
                       ) : (
                         messageLeaderboard.map((entry, idx) => (
-                          <tr key={entry.user} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                          <tr key={entry.user} className={idx % 2 === 0 ? "bg-orange-900/70" : "bg-orange-950/50"}>
                             <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
                             <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
                               <a
@@ -990,12 +997,13 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                                 {entry.user.length > 16 ? `${entry.user.slice(0, 8)}...${entry.user.slice(-6)}` : entry.user}
                               </a>
                             </td>
-                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{entry.count} MSG</td>
+                            <td className="px-4 py-2 text-yellow-400 font-bold text-right">{entry.count} MSG</td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
 
@@ -1005,11 +1013,14 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'vote' && path.startsWith('/vote') && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
               {/* Header z przyciskiem */}
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Vote</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                    <CheckSquare className="text-yellow-400" size={36} />
+                    <span>Vote</span>
+                  </h2>
                   <p className="text-orange-300">Create and participate in on-chain polls.</p>
                 </div>
                 <button
@@ -1022,25 +1033,25 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
               {/* User Statistics Panel */}
               {isAuthenticated && userAddress && (
-                <div className="mb-8 bg-gradient-to-br from-orange-900/40 to-purple-900/40 rounded-xl p-6 border border-orange-500/30">
+                <div className="mb-8 bg-gradient-to-br from-orange-900/60 to-purple-900/60 rounded-xl p-6 border border-orange-500/50">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                     <User className="mr-2 text-orange-400" size={24} />
                     Your Voting Activity
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
                       <div className="text-orange-300 text-sm mb-1">Polls Created</div>
                       <div className="text-3xl font-bold text-white">
                         {userPollsCreated}
                       </div>
                     </div>
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
                       <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
                       <div className="text-3xl font-bold text-white">
                         {userPollsVoted}
                       </div>
                     </div>
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
                       <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
                       <div className="text-3xl font-bold text-white">
                         {userTotalVotesCast}
@@ -1545,8 +1556,11 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'getname' && path.startsWith('/getname') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <h2 className="text-3xl font-bold text-white mb-4 flex items-center gap-3">
+                <User className="text-yellow-400" size={36} />
+                <span>Get Your Name</span>
+              </h2>
               {isConfirmingUsername && (
                 <div className="text-orange-300 text-sm text-center mb-4">Waiting for blockchain confirmation...</div>
               )}
@@ -1660,7 +1674,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'learn' && path.startsWith('/learn') && !/^\/learn\/[\w-]+$/.test(path) && (
           <div className="max-w-4xl mx-auto">
-            <LearnCard />
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <LearnCard />
+            </div>
           </div>
         )}
       </main>
