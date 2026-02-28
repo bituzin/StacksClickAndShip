@@ -873,15 +873,15 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               
 
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-orange-800/30 rounded-lg p-4">
+                <div className="bg-orange-800/30 rounded-lg p-4 text-center">
                   <p className="text-orange-400 text-sm font-bold">Today's Messages</p>
                   <p className="text-white text-3xl font-bold">{todayMessages !== null ? todayMessages : '...'}</p>
                 </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
+                <div className="bg-orange-800/30 rounded-lg p-4 text-center">
                   <p className="text-orange-400 text-sm font-bold">Total Messages</p>
                   <p className="text-white text-3xl font-bold">{totalMessages !== null ? totalMessages : '...'}</p>
                 </div>
-                <div className="bg-orange-800/30 rounded-lg p-4">
+                <div className="bg-orange-800/30 rounded-lg p-4 text-center">
                   <p className="text-orange-400 text-sm font-bold">My Messages</p>
                   <p className="text-white text-3xl font-bold">{userMessages !== null ? userMessages : (isAuthenticated ? '...' : '—')}</p>
                 </div>
@@ -1034,19 +1034,19 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                     Your Voting Activity
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20 text-center">
                       <div className="text-orange-300 text-sm mb-1">Polls Created</div>
                       <div className="text-3xl font-bold text-white">
                         {userPollsCreated}
                       </div>
                     </div>
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20 text-center">
                       <div className="text-orange-300 text-sm mb-1">Polls Voted</div>
                       <div className="text-3xl font-bold text-white">
                         {userPollsVoted}
                       </div>
                     </div>
-                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20">
+                    <div className="bg-orange-900/30 rounded-lg p-4 border border-orange-500/20 text-center">
                       <div className="text-orange-300 text-sm mb-1">Total Votes Cast</div>
                       <div className="text-3xl font-bold text-white">
                         {userTotalVotesCast}
