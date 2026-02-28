@@ -699,8 +699,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         {activeTab === 'deploy' && path.startsWith('/deploy') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
                   <Plus className="text-yellow-400 inline align-middle" size={40} />
                   <span>Deploy</span>
                 </h2>
