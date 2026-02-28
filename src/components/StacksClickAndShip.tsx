@@ -698,7 +698,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         )}
         {activeTab === 'deploy' && path.startsWith('/deploy') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
                   <Plus className="text-yellow-400 inline align-middle" size={40} />
@@ -727,7 +727,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         )}
         {activeTab === 'home' && path === '/' && (
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
               <h2 className="text-2xl text-white mb-2">Welcome to Stacks - Click and Ship</h2>
               <p className="text-base text-orange-300 italic mb-6">* GM, post, vote, learn, deploy...</p>
               <p className="text-orange-200 text-lg mb-8">
@@ -735,23 +735,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SayGMCard />
-                <Link to="/message" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/message" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Mail className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Post Message</h3>
                   <p className="text-orange-300">Post immutable messages to the blockchain</p>
                 </Link>
-                <Link to="/vote" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/vote" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <CheckSquare className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Vote</h3>
                   <p className="text-orange-300">Create and participate in on-chain polls</p>
                 </Link>
                 <GetNameCard />
-                <Link to="/learn" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/learn" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <BookOpen className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Learn Stacks</h3>
                   <p className="text-orange-300">Read about stacks basics</p>
                 </Link>
-                <Link to="/deploy" className="bg-orange-900/40 rounded-xl p-6 border border-orange-500/20 hover:border-orange-400/50 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
+                <Link to="/deploy" className="bg-orange-900/60 rounded-xl p-6 border border-orange-500/40 hover:border-orange-400/70 transition-all cursor-pointer" style={{ textDecoration: 'none' }}>
                   <Plus className="text-yellow-400 mb-3" size={32} />
                   <h3 className="text-xl text-white mb-2">Deploy</h3>
                   <p className="text-orange-300">Deploy and manage smart contracts</p>
@@ -764,8 +764,8 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         {activeTab === 'gm' && path.startsWith('/gm') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
                   <Sun className="text-yellow-400 inline align-middle" size={40} />
                   <span>Say GM to Stacks!</span>
                 </h2>
@@ -866,7 +866,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         {activeTab === 'message' && path.startsWith('/message') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-6 flex items-center justify-center gap-3">
+              <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
                 <Mail className="inline text-amber-400 align-middle" size={32} />
                 <span>Post Message On-Chain</span>
               </h2>
@@ -1017,7 +1017,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               {/* Header z przyciskiem */}
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">Vote</h2>
+                  <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                    <CheckSquare className="text-yellow-400" size={36} />
+                    <span>Vote</span>
+                  </h2>
                   <p className="text-orange-300">Create and participate in on-chain polls.</p>
                 </div>
                 <button
@@ -1554,7 +1557,10 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
         {activeTab === 'getname' && path.startsWith('/getname') && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-4">Get Your Name</h2>
+              <h2 className="text-3xl font-bold text-white mb-4 flex items-center gap-3">
+                <User className="text-yellow-400" size={36} />
+                <span>Get Your Name</span>
+              </h2>
               {isConfirmingUsername && (
                 <div className="text-orange-300 text-sm text-center mb-4">Waiting for blockchain confirmation...</div>
               )}
@@ -1668,7 +1674,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'learn' && path.startsWith('/learn') && !/^\/learn\/[\w-]+$/.test(path) && (
           <div className="max-w-4xl mx-auto">
-            <LearnCard />
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
+              <LearnCard />
+            </div>
           </div>
         )}
       </main>
