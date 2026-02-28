@@ -763,23 +763,23 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
 
         {activeTab === 'gm' && path.startsWith('/gm') && (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-orange-500/30 shadow-2xl">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-orange-500/60 shadow-2xl">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
                   <Sun className="text-yellow-400 inline align-middle" size={40} />
                   <span>Say GM to Stacks!</span>
                 </h2>
                 <div className="grid grid-cols-3 gap-4 mt-6 mb-4">
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">Today's GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">Today's GM</p>
                     <p className="text-white text-3xl font-bold">{todayGm !== null ? todayGm : '...'}</p>
                   </div>
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">Total GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">Total GM</p>
                     <p className="text-white text-3xl font-bold">{totalGm !== null ? totalGm : '...'}</p>
                   </div>
-                  <div className="bg-orange-800/30 rounded-lg p-4">
-                    <p className="text-orange-400 text-sm font-bold">My GM</p>
+                  <div className="bg-orange-800/60 rounded-lg p-4 border border-orange-600/40 text-center">
+                    <p className="text-orange-300 text-sm font-bold">My GM</p>
                     <p className="text-white text-3xl font-bold">{userGm !== null ? userGm : (isAuthenticated ? '...' : '—')}</p>
                   </div>
                 </div>
@@ -796,9 +796,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
               {/* Ostatni GM - po polsku, ładna karta */}
               {lastGm && (
                 <div className="mt-6 flex flex-col items-center">
-                  <div className="bg-orange-900/60 border border-orange-400/30 rounded-xl px-6 py-4 shadow-lg w-full max-w-2xl">
+                  <div className="bg-orange-900/80 border border-orange-500/50 rounded-xl px-6 py-4 shadow-lg w-full max-w-2xl">
                     <div className="flex justify-center mb-2">
-                      <span className="text-orange-400 text-sm font-semibold">Last GM sent by:</span>
+                      <span className="text-orange-300 text-sm font-semibold">Last GM sent by:</span>
                     </div>
                     <div className="text-orange-100 font-mono text-lg whitespace-nowrap overflow-x-auto text-center">
                       {(() => {
@@ -828,9 +828,9 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                   <span className="mr-2">📊</span> Leaderboard
                 </h3>
-                <div className="overflow-hidden rounded-lg border border-orange-500/30">
+                <div className="overflow-hidden rounded-lg border border-orange-500/50">
                   <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    <table className="min-w-full bg-orange-900/40">
+                    <table className="min-w-full bg-orange-950/70">
                       <tbody>
                         {leaderboard.length === 0 && (
                           <tr>
@@ -838,7 +838,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                           </tr>
                         )}
                         {leaderboard.map((user, idx) => (
-                          <tr key={user.user} className={idx % 2 === 0 ? "bg-orange-900/60" : ""}>
+                          <tr key={user.user} className={idx % 2 === 0 ? "bg-orange-900/70" : "bg-orange-950/50"}>
                             <td className="px-4 py-2 text-orange-200 font-bold">{idx + 1}</td>
                             <td className="px-4 py-2 text-orange-100 break-all font-mono text-xs">
                               <a
@@ -851,7 +851,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                                 {user.user.length > 16 ? `${user.user.slice(0, 8)}...${user.user.slice(-6)}` : user.user}
                               </a>
                             </td>
-                            <td className="px-4 py-2 text-orange-400 font-bold text-right">{user.total} GM</td>
+                            <td className="px-4 py-2 text-yellow-400 font-bold text-right">{user.total} GM</td>
                           </tr>
                         ))}
                       </tbody>
