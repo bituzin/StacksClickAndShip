@@ -1,0 +1,13 @@
+# Exclude source and dev files from npm package
+src/
+contracts/
+deployments/
+settings/
+public/
+*.config.*
+tsconfig*.json
+.eslintrc*
+.gitignore
+README.md
+index.html
+stacks-click-and-ship.tsx
