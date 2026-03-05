@@ -1,4 +1,5 @@
 import { Mail } from 'lucide-react';
+import { UserSession } from '@stacks/connect';
 
 interface MessageLeaderboardRow {
   user: string;
@@ -7,6 +8,7 @@ interface MessageLeaderboardRow {
 
 interface PostMessageCardProps {
   isAuthenticated: boolean;
+  userSession?: UserSession;
   todayMessages: number | null;
   totalMessages: number | null;
   userMessages: number | null;
@@ -20,6 +22,7 @@ const POST_MESSAGE_CONTRACT_NAME = import.meta.env.VITE_POST_MESSAGE_CONTRACT_NA
 
 export default function PostMessageCard({
   isAuthenticated,
+  userSession,
   todayMessages,
   totalMessages,
   userMessages,
@@ -98,6 +101,7 @@ export default function PostMessageCard({
               const { StacksMainnet } = await import('@stacks/network');
 
               await openContractCall({
+                userSession,
                 network: new StacksMainnet(),
                 anchorMode: 1,
                 contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
