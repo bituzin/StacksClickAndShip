@@ -73,7 +73,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // AppKit/Wallet
   const [appKitAddress] = useState<string | null>(null);
   const [persistedAppKitAddress, setPersistedAppKitAddress] = useState<string | null>(null);
-  const [userAddress, setUserAddress] = useState(null);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Refy
