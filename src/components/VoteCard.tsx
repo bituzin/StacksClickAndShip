@@ -1,8 +1,9 @@
 import React from 'react';
-import { openContractCall } from '@stacks/connect';
+import { openContractCall, UserSession } from '@stacks/connect';
 import { StacksMainnet } from '@stacks/network';
 
 interface VoteProps {
+  userSession?: UserSession;
   fetchPolls: () => void;
   setTxPopup: (popup: { show: boolean; txId: string }) => void;
 }
@@ -10,7 +11,7 @@ interface VoteProps {
 const VOTING_CONTRACT_ADDRESS = 'SP2Z3M34KEKC79TMRMZB24YG30FE25JPN83TPZSZ2';
 const VOTING_CONTRACT_NAME = 'votingv1';
 
-export default function VoteCard({ fetchPolls, setTxPopup }: VoteProps) {
+export default function VoteCard({ userSession, fetchPolls, setTxPopup }: VoteProps) {
   const [showCreateVoteModal, setShowCreateVoteModal] = React.useState(false);
   const [voteTitle, setVoteTitle] = React.useState('');
   const [voteDescription, setVoteDescription] = React.useState('');
@@ -83,6 +84,7 @@ export default function VoteCard({ fetchPolls, setTxPopup }: VoteProps) {
         uintCV(minSTXAmount * 1000000)
       ];
       await openContractCall({
+        userSession,
         contractAddress: VOTING_CONTRACT_ADDRESS,
         contractName: VOTING_CONTRACT_NAME,
         functionName: 'create-poll',

@@ -334,6 +334,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   async function handleSayGM() {
     if (!isAuthenticated) return;
     await openContractCall({
+      userSession: propUserSession,
       network: new StacksMainnet(),
       anchorMode: 1,
       contractAddress: GMOK_CONTRACT_ADDRESS,
@@ -454,6 +455,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
       console.log('📤 Sending to contract:', functionArgs);
 
       await openContractCall({
+        userSession: propUserSession,
         contractAddress: 'SP2Z3M34KEKC79TMRMZB24YG30FE25JPN83TPZSZ2',
         contractName: 'votingv1',
         functionName: 'create-poll',
@@ -934,6 +936,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                     const { stringAsciiCV } = await import('@stacks/transactions');
                     
                     await openContractCall({
+                      userSession: propUserSession,
                       network: new StacksMainnet(),
                       anchorMode: 1,
                       contractAddress: POST_MESSAGE_CONTRACT_ADDRESS,
@@ -1463,6 +1466,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                                       : selectedPoll['poll-id']?.value;
                                     
                                     await openContractCall({
+                                      userSession: propUserSession,
                                       contractAddress: 'SP2Z3M34KEKC79TMRMZB24YG30FE25JPN83TPZSZ2',
                                       contractName: 'votingv1',
                                       functionName: 'vote',
@@ -1587,6 +1591,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                         // Usuń podwójne cudzysłowy z początku i końca, jeśli są
                         const cleanUsername = currentUsername.replace(/^"+|"+$/g, '');
                         await openContractCall({
+                          userSession: propUserSession,
                           contractAddress: GET_NAME_CONTRACT_ADDRESS,
                           contractName: GET_NAME_CONTRACT_NAME,
                           functionName: 'release-username',
@@ -1729,6 +1734,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
                       try {
                         const { stringAsciiCV } = await import('@stacks/transactions');
                         await openContractCall({
+                          userSession: propUserSession,
                           contractAddress: GET_NAME_CONTRACT_ADDRESS,
                           contractName: GET_NAME_CONTRACT_NAME,
                           functionName: 'register-username',
