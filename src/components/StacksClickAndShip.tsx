@@ -37,8 +37,8 @@ import { useMessageStats } from '../hooks/useMessageStats';
 
 const APPKIT_STORAGE_KEY = 'stacks_appkit_address';
 
-function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any; activeTabOverride?: string }) {
-  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession, activeTabOverride } = props || {};
+function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: () => void; userSession?: any; activeTabOverride?: string; connectedAddress?: string | null }) {
+  const { isAuthenticated: propIsAuthenticated, connectWallet: propConnectWallet, userSession: propUserSession, activeTabOverride, connectedAddress: propConnectedAddress } = props || {};
   // Routing
   const location = useLocation();
   const path = location.pathname;
@@ -160,6 +160,12 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
   // Pobierz adres użytkownika z userSession gdy zalogowany
   React.useEffect(() => {
     if (propIsAuthenticated && propUserSession) {
+      // Priority: address passed directly from onFinish (most accurate - reflects selected account)
+      if (propConnectedAddress) {
+        setUserAddress(propConnectedAddress);
+        console.log('👛 User address from prop:', propConnectedAddress);
+        return;
+      }
       try {
         const userData = propUserSession.loadUserData();
         const addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
@@ -172,7 +178,7 @@ function StacksClickAndShip(props: { isAuthenticated?: boolean; connectWallet?: 
     } else if (!propIsAuthenticated) {
       setUserAddress(null);
     }
-  }, [propIsAuthenticated, propUserSession]);
+  }, [propIsAuthenticated, propUserSession, propConnectedAddress]);
 
   // Sprawdź nazwę przy zmianie adresu
   React.useEffect(() => {
