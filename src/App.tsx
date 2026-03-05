@@ -10,10 +10,19 @@ const userSession = new UserSession({ appConfig });
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(userSession.isUserSignedIn());
+  const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   
   // Sprawdź stan sesji tylko przy pierwszym załadowaniu
   useEffect(() => {
-    setIsAuthenticated(userSession.isUserSignedIn());
+    const signedIn = userSession.isUserSignedIn();
+    setIsAuthenticated(signedIn);
+    if (signedIn) {
+      try {
+        const userData = userSession.loadUserData();
+        const addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
+        setConnectedAddress(addr);
+      } catch (_e) {}
+    }
   }, []);
 
   const connectWallet = () => {
@@ -23,18 +32,24 @@ function App() {
         icon: window.location.origin + '/vite.svg',
       },
       redirectTo: '/',
-      onFinish: () => {
-        console.log('✅ Wallet connected - checking auth state...');
-        // Sprawdź czy użytkownik jest rzeczywiście zalogowany
-        setTimeout(() => {
-          const isSignedIn = userSession.isUserSignedIn();
-          console.log('🔍 User signed in:', isSignedIn);
-          if (isSignedIn) {
-            setIsAuthenticated(true);
-            const userData = userSession.loadUserData();
-            console.log('👤 User data after connect:', userData);
-          }
-        }, 100);
+      onFinish: (data: any) => {
+        console.log('✅ Wallet connected');
+        // Read address directly from authResponsePayload (freshest data, reflects selected account)
+        let addr: string | null = null;
+        try {
+          addr = data?.authResponsePayload?.profile?.stxAddress?.mainnet ?? null;
+        } catch (_e) {}
+        // Fallback: read from updated userSession
+        if (!addr) {
+          try {
+            const session = data?.userSession ?? userSession;
+            const userData = session.loadUserData();
+            addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
+          } catch (_e) {}
+        }
+        console.log('👤 Connected address:', addr);
+        setConnectedAddress(addr);
+        setIsAuthenticated(true);
       },
       userSession,
     });
@@ -50,6 +65,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -60,6 +76,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -70,6 +87,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -80,6 +98,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -90,6 +109,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -99,6 +119,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -108,6 +129,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
             />
           }
         />
@@ -118,6 +140,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               connectWallet={connectWallet}
               userSession={userSession}
+              connectedAddress={connectedAddress}
               activeTabOverride="mystats"
             />
           }
