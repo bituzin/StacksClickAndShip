@@ -1,15 +1,43 @@
 {
   "name": "stacks-click-and-ship",
-  "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "A complete Stacks blockchain application for deploying contracts, sending messages, and more",
+  "description": "A complete Stacks blockchain app: GM, send messages, vote, register names, deploy contracts",
+  "main": "./dist/stacks-click-and-ship.umd.cjs",
+  "module": "./dist/stacks-click-and-ship.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/stacks-click-and-ship.js",
+      "require": "./dist/stacks-click-and-ship.umd.cjs"
+    },
+    "./dist/style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "stacks",
+    "blockchain",
+    "bitcoin",
+    "clarity",
+    "react",
+    "web3",
+    "leather-wallet"
+  ],
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:lib": "vite build --config vite.lib.config.ts",
     "vercel-build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "react-router-dom": ">=6.0.0"
   },
   "dependencies": {
     "@reown/appkit": "^1.8.15",
@@ -25,10 +53,10 @@
     "@walletconnect/utils": "^2.23.1",
     "lucide-react": "^0.294.0",
     "qrcode.react": "^4.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
     "react-markdown": "^9.0.1",
-    "react-router-dom": "^6.30.2",
+    "react-router-dom": ">=6.0.0",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
@@ -37,6 +65,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "ajv": "^8.18.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -44,6 +73,7 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^4.5.4"
   }
 }
