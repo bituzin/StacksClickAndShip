@@ -32,25 +32,15 @@ function App() {
         icon: window.location.origin + '/vite.svg',
       },
       redirectTo: '/',
-      onFinish: (data: any) => {
-        console.log('✅ Wallet connected');
-        // Read address directly from authResponsePayload (freshest data, reflects selected account)
-        let addr: string | null = null;
-        try {
-          addr = data?.authResponsePayload?.profile?.stxAddress?.mainnet ?? null;
-        } catch (_e) {}
-        // Fallback: read from updated userSession
-        if (!addr) {
-          try {
-            const session = data?.userSession ?? userSession;
-            const userData = session.loadUserData();
-            addr = userData?.profile?.stxAddress?.mainnet || userData?.identityAddress || null;
-          } catch (_e) {}
-        }
-        console.log('👤 Connected address:', addr);
+      onFinish: () => {
+        // @stacks/connect calls handlePendingSignIn before onFinish,
+        // so loadUserData() here returns the freshly selected account
+        const data = userSession.loadUserData();
+        const addr = data?.profile?.stxAddress?.mainnet || data?.identityAddress || null;
         setConnectedAddress(addr);
         setIsAuthenticated(true);
       },
+      onCancel: () => {},
       userSession,
     });
   };
