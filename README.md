@@ -1,7 +1,3 @@
-
-
-
-
 # StacksClickAndShip 🚀
 
 [Live Demo](https://stacks-click-and-ship.vercel.app)
@@ -25,6 +21,17 @@ A complete dApp for the Stacks blockchain with features: GM broadcaster, message
 - Lucide React (icons)
 
 
+
+## 📦 NPM Package
+
+**Name:** `@bituzin.org/stacks-click-and-ship`
+
+**Install:**
+```sh
+npm install "@bituzin.org/stacks-click-and-ship"
+```
+
+- [npmjs.com/package/@bituzin.org/stacks-click-and-ship](https://www.npmjs.com/package/@bituzin.org/stacks-click-and-ship)
 
 ## 📝 How to use
 
