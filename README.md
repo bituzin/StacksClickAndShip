@@ -24,14 +24,14 @@ A complete dApp for the Stacks blockchain with features: GM broadcaster, message
 
 ## 📦 NPM Package
 
-**Name:** `@bituzin.org/stacks-click-and-ship`
+**Name:** `clickandship`
 
 **Install:**
 ```sh
-npm install "@bituzin.org/stacks-click-and-ship"
+npm install clickandship
 ```
 
-- [npmjs.com/package/@bituzin.org/stacks-click-and-ship](https://www.npmjs.com/package/@bituzin.org/stacks-click-and-ship)
+- [npmjs.com/package/clickandship](https://www.npmjs.com/package/clickandship)
 
 ## 📝 How to use
 
