@@ -1,5 +1,5 @@
 {
-  "name": "@bituzin.org/stacks-click-and-ship",
+  "name": "clickandship",
   "version": "1.0.0",
   "type": "module",
   "description": "A complete Stacks blockchain app: GM, send messages, vote, register names, deploy contracts",
